@@ -10,6 +10,8 @@ import { useState } from 'react';
 import Header from './components/Header';
 import BottomNavBar from './components/BottomNavBar';
 import PosView from './views/PosView';
+import InventoryView from './views/InventoryView';
+import { MOCK_SHOES, type Shoe } from './data/mockShoes';
 import type { TabType } from './types/navigation';
 
 // ─── Placeholder view for tabs not yet implemented ───────────────────────────
@@ -52,23 +54,23 @@ function PlaceholderView({ icon, title, description, accentColor }: PlaceholderP
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('pos');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [shoes, setShoes] = useState<Shoe[]>(MOCK_SHOES);
 
   const renderTab = () => {
     switch (currentTab) {
       case 'pos':
         return (
           <PosView
+            shoes={shoes}
             isCheckoutOpen={isCheckoutOpen}
             onCheckoutOpenChange={setIsCheckoutOpen}
           />
         );
       case 'inventory':
         return (
-          <PlaceholderView
-            icon="📦"
-            title="Inventario"
-            description="Vista de Ajuste de Existencias (Próximamente)"
-            accentColor="bg-blue-50 border-blue-200 text-blue-800"
+          <InventoryView
+            shoes={shoes}
+            onSaveStock={setShoes}
           />
         );
       case 'metrics':

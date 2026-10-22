@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import type { Shoe } from '../data/mockShoes';
 import { MOCK_SHOES } from '../data/mockShoes';
 import type { CartItem } from '../types/cart';
 import { cartKey } from '../types/cart';
@@ -17,14 +18,17 @@ import SearchBar from '../components/SearchBar';
 import CategoryPills, { CATEGORIES, type FilterCategory } from '../components/CategoryPills';
 
 interface PosViewProps {
+  shoes?: Shoe[];
   isCheckoutOpen?: boolean;
   onCheckoutOpenChange?: (open: boolean) => void;
 }
 
 export default function PosView({
+  shoes,
   isCheckoutOpen: externalIsCheckoutOpen,
   onCheckoutOpenChange,
 }: PosViewProps) {
+  const shoeList = shoes ?? MOCK_SHOES;
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FilterCategory>('Todas');
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
@@ -43,7 +47,7 @@ export default function PosView({
     cart.get(cartKey(shoeId, size))?.quantity ?? 0;
 
   const openDrawer = (shoeId: string, size: number) => {
-    const shoe = MOCK_SHOES.find((s) => s.id === shoeId)!;
+    const shoe = shoeList.find((s) => s.id === shoeId)!;
     const sizeEntry = shoe.sizes.find((se) => se.size === size)!;
     const existing = cart.get(cartKey(shoeId, size));
     setDrawerVariant({
@@ -87,19 +91,19 @@ export default function PosView({
   };
 
   const normalised = query.trim().toLowerCase();
-  const filtered = MOCK_SHOES.filter((shoe) => {
+  const filtered = shoeList.filter((shoe) => {
     const passesCategory = category === 'Todas' || shoe.category === category;
     const passesText = !normalised || shoe.name.toLowerCase().includes(normalised) || shoe.brand.toLowerCase().includes(normalised);
     return passesCategory && passesText;
   });
 
   const counts = CATEGORIES.reduce<Record<FilterCategory, number>>((acc, cat) => {
-    acc[cat] = MOCK_SHOES.filter((shoe) => {
+    acc[cat] = shoeList.filter((shoe) => {
       const passesText = !normalised || shoe.name.toLowerCase().includes(normalised) || shoe.brand.toLowerCase().includes(normalised);
       return passesText && (cat === 'Todas' || shoe.category === cat);
     }).length;
     return acc;
-  }, { Todas: 0, Casual: 0, Zapatillas: 0, Formal: 0 });
+  }, {} as Record<FilterCategory, number>);
 
   return (
     <>

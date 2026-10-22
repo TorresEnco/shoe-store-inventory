@@ -92,7 +92,7 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
     <nav
       role="tablist"
       aria-label="Navegación principal"
-      className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-stone-200 z-50 safe-area-pb"
+      className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-stone-200 z-40 safe-area-pb"
     >
       <div className="flex items-stretch">
         {NAV_ITEMS.map(({ id, label, icon }) => {
