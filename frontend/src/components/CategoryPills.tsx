@@ -8,7 +8,7 @@ import type { Category } from '../data/mockShoes';
 
 export type FilterCategory = 'Todas' | Category;
 
-export const CATEGORIES: FilterCategory[] = ['Todas', 'Casual', 'Zapatillas', 'Formal'];
+export const CATEGORIES: FilterCategory[] = ['Todas', 'Casual', 'Zapatillas', 'Formal', 'Botines'];
 
 interface CategoryPillsProps {
   active: FilterCategory;
