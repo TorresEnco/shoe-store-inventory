@@ -9,10 +9,12 @@
 import { useState } from 'react';
 import Header from './components/Header';
 import BottomNavBar from './components/BottomNavBar';
+import LoginView from './views/LoginView';
 import PosView from './views/PosView';
 import InventoryView from './views/InventoryView';
 import { MOCK_SHOES, type Shoe } from './data/mockShoes';
 import type { TabType } from './types/navigation';
+import type { UserProfile } from './types/user';
 
 // ─── Placeholder view for tabs not yet implemented ───────────────────────────
 
@@ -52,6 +54,13 @@ function PlaceholderView({ icon, title, description, accentColor }: PlaceholderP
 // ─── Root component ───────────────────────────────────────────────────────────
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser] = useState<UserProfile>({
+    id: 1,
+    fullName: 'Carlos Torres',
+    username: 'carlos_torres',
+    role: 'ADMIN',
+  });
   const [currentTab, setCurrentTab] = useState<TabType>('pos');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [shoes, setShoes] = useState<Shoe[]>(MOCK_SHOES);
@@ -85,13 +94,17 @@ export default function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <LoginView onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div
       className={`max-w-md mx-auto min-h-screen bg-cream shadow-xl flex flex-col relative transition-all duration-200 ${
         isCheckoutOpen ? 'pb-0 overflow-hidden' : 'pb-20'
       }`}
     >
-      <Header />
+      <Header currentUser={currentUser} onLogout={() => setIsAuthenticated(false)} />
 
       <div className="flex flex-1 flex-col overflow-y-auto">
         {renderTab()}
