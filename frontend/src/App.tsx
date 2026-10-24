@@ -9,49 +9,24 @@
 import { useState } from 'react';
 import Header from './components/Header';
 import BottomNavBar from './components/BottomNavBar';
+import LoginView from './views/LoginView';
 import PosView from './views/PosView';
 import InventoryView from './views/InventoryView';
+import MetricsView from './views/MetricsView';
 import { MOCK_SHOES, type Shoe } from './data/mockShoes';
 import type { TabType } from './types/navigation';
-
-// ─── Placeholder view for tabs not yet implemented ───────────────────────────
-
-interface PlaceholderProps {
-  icon: string;
-  title: string;
-  description: string;
-  accentColor: string;
-}
-
-function PlaceholderView({ icon, title, description, accentColor }: PlaceholderProps) {
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8">
-      <div className="flex flex-col items-center gap-1 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">
-          Comercial Torres · Sistema POS
-        </p>
-        <h1 className="text-2xl font-bold text-leather">{title}</h1>
-      </div>
-      <div
-        className={[
-          'w-full rounded-2xl border-2 border-dashed p-8',
-          'flex flex-col items-center gap-4 text-center',
-          accentColor,
-        ].join(' ')}
-      >
-        <span className="text-5xl" role="img" aria-label={title}>{icon}</span>
-        <p className="text-sm font-semibold leading-snug">{description}</p>
-        <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium shadow-sm">
-          En construcción
-        </span>
-      </div>
-    </main>
-  );
-}
+import type { UserProfile } from './types/user';
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser] = useState<UserProfile>({
+    id: 1,
+    fullName: 'Carlos Torres',
+    username: 'carlos_torres',
+    role: 'ADMIN',
+  });
   const [currentTab, setCurrentTab] = useState<TabType>('pos');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [shoes, setShoes] = useState<Shoe[]>(MOCK_SHOES);
@@ -74,16 +49,13 @@ export default function App() {
           />
         );
       case 'metrics':
-        return (
-          <PlaceholderView
-            icon="📊"
-            title="Métricas"
-            description="Vista de Métricas y Pareto ABC (Próximamente)"
-            accentColor="bg-violet-50 border-violet-200 text-violet-800"
-          />
-        );
+        return <MetricsView />;
     }
   };
+
+  if (!isAuthenticated) {
+    return <LoginView onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div
@@ -91,7 +63,7 @@ export default function App() {
         isCheckoutOpen ? 'pb-0 overflow-hidden' : 'pb-20'
       }`}
     >
-      <Header />
+      <Header currentUser={currentUser} onLogout={() => setIsAuthenticated(false)} />
 
       <div className="flex flex-1 flex-col overflow-y-auto">
         {renderTab()}
