@@ -11,9 +11,10 @@ import type { UserProfile } from '../types/user';
 interface HeaderProps {
   currentUser: UserProfile;
   onLogout: () => void;
+  onOpenSalesHistory: () => void;
 }
 
-export default function Header({ currentUser, onLogout }: HeaderProps) {
+export default function Header({ currentUser, onLogout, onOpenSalesHistory }: HeaderProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,10 +53,15 @@ export default function Header({ currentUser, onLogout }: HeaderProps) {
 
         {/* ── Status + Avatar (right) ── */}
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+          <button
+            type="button"
+            onClick={onOpenSalesHistory}
+            aria-label="Ver historial de ventas y caja"
+            className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 active:scale-95"
+          >
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
             Caja Abierta
-          </span>
+          </button>
 
           <button
             ref={avatarRef}
