@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import type { Shoe } from '../data/mockShoes';
-import { MOCK_SHOES } from '../data/mockShoes';
 import type { CartItem } from '../types/cart';
 import { cartKey } from '../types/cart';
 import ShoeCard from '../components/ShoeCard';
@@ -21,14 +20,16 @@ interface PosViewProps {
   shoes?: Shoe[];
   isCheckoutOpen?: boolean;
   onCheckoutOpenChange?: (open: boolean) => void;
+  onSaleCompleted?: () => void | Promise<void>;
 }
 
 export default function PosView({
   shoes,
   isCheckoutOpen: externalIsCheckoutOpen,
   onCheckoutOpenChange,
+  onSaleCompleted,
 }: PosViewProps) {
-  const shoeList = shoes ?? MOCK_SHOES;
+  const shoeList = shoes ?? [];
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FilterCategory>('Todas');
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
@@ -52,6 +53,7 @@ export default function PosView({
     const existing = cart.get(cartKey(shoeId, size));
     setDrawerVariant({
       shoeId,
+      variantId: sizeEntry.variantId ?? 0,
       name: shoe.name,
       brand: shoe.brand,
       color: shoe.color,
@@ -88,6 +90,7 @@ export default function PosView({
     setCheckoutOpen(false);
     setToastMessage('¡Venta registrada con éxito!');
     setTimeout(() => setToastMessage(null), 3500);
+    void onSaleCompleted?.();
   };
 
   const normalised = query.trim().toLowerCase();

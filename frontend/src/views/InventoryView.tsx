@@ -32,7 +32,7 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
     color: selectedShoe?.color ?? '',
     sizes: selectedShoe?.sizes ?? [],
   };
-  const currentSizes: SizeEntry[] = activeVariant.sizes;
+  const currentSizes: SizeEntry[] = [...activeVariant.sizes].sort((a, b) => Number(a.size) - Number(b.size));
 
   const getStockCount = (size: number, prevStock: number): number => {
     const key = `${selectedShoe.id}::${activeColor}::${size}`;

@@ -21,6 +21,7 @@ import type { CartItem } from '../types/cart';
 /** Everything the drawer needs to know about the variant being opened. */
 export interface DrawerVariant {
   shoeId: string;
+  variantId: number;
   name: string;
   brand: string;
   color: string;
@@ -152,6 +153,7 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
   const handleConfirm = () => {
     onConfirm({
       shoeId: variant.shoeId,
+      variantId: variant.variantId,
       name: variant.name,
       brand: variant.brand,
       color: variant.color,

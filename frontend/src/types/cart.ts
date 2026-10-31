@@ -14,8 +14,10 @@
  */
 
 export interface CartItem {
-  /** Matches `Shoe.id` in mockShoes.ts */
+  /** Matches `Shoe.id` (backend product id as string). */
   shoeId: string;
+  /** Backend product_variants id used when processing the sale. */
+  variantId: number;
   name: string;
   brand: string;
   color: string;
