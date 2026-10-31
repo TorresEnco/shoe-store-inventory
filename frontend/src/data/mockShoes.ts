@@ -12,9 +12,10 @@
 export type Category = 'Casual' | 'Zapatillas' | 'Formal' | 'Botines';
 
 export interface SizeEntry {
-  size: number;   // EU numeric size
-  stock: number;  // 0 = agotado
-  price?: number; // Variant-specific catalog price in PEN (optional)
+  size: number;      // EU numeric size
+  stock: number;     // 0 = agotado
+  price?: number;    // Variant-specific catalog price in PEN (optional)
+  variantId?: number; // Backend product_variants id
 }
 
 export interface ColorVariant {

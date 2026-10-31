@@ -106,6 +106,8 @@ function ShoeThumbnail({ shoe }: { shoe: Shoe }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ShoeCard({ shoe, selectedSize, onSizeSelect, cartQtyForSize }: ShoeCardProps) {
+  const sortedVariants = [...shoe.sizes].sort((a, b) => Number(a.size) - Number(b.size));
+
   return (
     <article
       className="flex gap-3.5 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-sm transition-shadow hover:shadow-md"
@@ -133,7 +135,7 @@ export default function ShoeCard({ shoe, selectedSize, onSizeSelect, cartQtyForS
           role="group"
           aria-label={`Tallas disponibles para ${shoe.name}`}
         >
-          {shoe.sizes.map((entry) => (
+          {sortedVariants.map((entry) => (
             <SizeChip
               key={entry.size}
               entry={entry}

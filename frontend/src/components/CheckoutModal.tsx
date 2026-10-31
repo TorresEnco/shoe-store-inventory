@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import type { CartItem } from '../types/cart';
+import { processSale, type PaymentType } from '../services/api';
 import CheckoutYapeSection from './CheckoutYapeSection';
 import CheckoutItemList from './CheckoutItemList';
 import CheckoutTotals from './CheckoutTotals';
@@ -30,14 +31,38 @@ export default function CheckoutModal({
 }: CheckoutModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yape');
   const [customerName, setCustomerName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const totalPairs = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
-  const handleFinishSale = () => {
-    onConfirmSale(customerName.trim() || 'Público General', paymentMethod);
+  const handleFinishSale = async () => {
+    if (isSubmitting || cart.length === 0) return;
+
+    const paymentType: PaymentType = paymentMethod === 'cash' ? 'CASH' : 'YAPE_PLIN';
+    const finalCustomerName = customerName.trim() || 'Público General';
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      await processSale({
+        customerName: finalCustomerName,
+        paymentType,
+        items: cart.map((item) => ({
+          variantId: item.variantId,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+        })),
+      });
+      onConfirmSale(finalCustomerName, paymentMethod);
+    } catch {
+      setErrorMessage('No se pudo registrar la venta. Verifica la conexión e intenta nuevamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -154,14 +179,24 @@ export default function CheckoutModal({
 
         {/* BOTTOM: Pinned sticky footer */}
         <footer className="flex-shrink-0 p-4 bg-white border-t border-stone-200 flex flex-col gap-2">
+          {errorMessage && (
+            <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
+              <span aria-hidden="true">⚠️</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
           <button
             type="button"
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || isSubmitting}
             onClick={handleFinishSale}
             className="w-full py-3.5 rounded-2xl bg-leather-dark text-white font-bold text-sm shadow-lg transition-all active:scale-98 hover:brightness-110 flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>Confirmar y Finalizar Venta (S/. {totalPrice.toFixed(2)})</span>
-            <span>✓</span>
+            <span>
+              {isSubmitting
+                ? 'Procesando venta...'
+                : `Confirmar y Finalizar Venta (S/. ${totalPrice.toFixed(2)})`}
+            </span>
+            <span>{isSubmitting ? '⏳' : '✓'}</span>
           </button>
           <button
             type="button"
