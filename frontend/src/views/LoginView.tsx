@@ -6,17 +6,31 @@
  */
 
 import { useState, type FormEvent } from 'react';
+import { login, type AuthUser } from '../services/api';
 
 interface LoginViewProps {
-  onLogin: () => void;
+  onLogin: (user: AuthUser) => void;
 }
 
 export default function LoginView({ onLogin }: LoginViewProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onLogin();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const user = await login({ username, password });
+      onLogin(user);
+    } catch {
+      setError('Usuario o contraseña incorrectos. Verifica tus credenciales.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,6 +72,8 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               name="username"
               type="text"
               autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               placeholder="carlos_torres"
               className="w-full bg-[#FAF4EE] border-none rounded-2xl pl-11 pr-4 py-3.5 text-sm text-stone-800 placeholder-stone-400 focus:ring-2 focus:ring-leather/30 focus:outline-none"
             />
@@ -78,6 +94,8 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               name="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Introduce tu contraseña"
               className="w-full bg-[#FAF4EE] border-none rounded-2xl pl-11 pr-12 py-3.5 text-sm text-stone-800 placeholder-stone-400 focus:ring-2 focus:ring-leather/30 focus:outline-none"
             />
@@ -96,11 +114,22 @@ export default function LoginView({ onLogin }: LoginViewProps) {
           </div>
         </div>
 
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700"
+          >
+            <span aria-hidden="true">⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
         <button
           type="submit"
-          className="w-full py-4 bg-leather hover:bg-leather-dark text-white font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          disabled={isLoading}
+          className="w-full py-4 bg-leather hover:bg-leather-dark text-white font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Iniciar Sesión ➔
+          {isLoading ? 'Verificando...' : 'Iniciar Sesión ➔'}
         </button>
       </form>
 

@@ -1,5 +1,40 @@
 const API_BASE_URL = 'http://localhost:8080/api';
 
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthUser {
+  id: number;
+  fullName: string;
+  username: string;
+  role: 'ADMIN' | 'CASHIER';
+}
+
+export interface ApiUser {
+  id: number;
+  fullName: string;
+  username: string;
+  role: 'ADMIN' | 'CASHIER';
+  active: boolean;
+}
+
+export interface ApiCustomer {
+  id: number;
+  name: string;
+  phone: string | null;
+  totalPurchases: number | null;
+  createdAt: string | null;
+}
+
+export interface CreateUserPayload {
+  fullName: string;
+  username: string;
+  password: string;
+  role: 'ADMIN' | 'CASHIER';
+}
+
 export interface ApiVariant {
   id: number;
   colorId: number | null;
@@ -35,6 +70,7 @@ export interface ProcessSaleItem {
 export interface ProcessSalePayload {
   userId?: number | null;
   customerName?: string;
+  customerPhone?: string;
   paymentType: PaymentType;
   items: ProcessSaleItem[];
 }
@@ -82,6 +118,19 @@ export interface ParetoReport {
   liquidationSuggestions: string[];
 }
 
+function extractErrorMessage(detail: string): string | null {
+  const raw = detail.trim();
+  if (!raw) return null;
+  try {
+    const body = JSON.parse(raw) as { message?: unknown; detail?: unknown; error?: unknown };
+    const message = body.message || body.detail || body.error;
+    if (typeof message === 'string' && message.trim()) return message.trim();
+  } catch {
+    if (!raw.startsWith('{') && !raw.startsWith('[')) return raw;
+  }
+  return null;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -93,7 +142,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    throw new Error(detail || `Error ${response.status} al comunicarse con el servidor`);
+    throw new Error(extractErrorMessage(detail) || 'No se pudo completar la operación.');
   }
 
   if (response.status === 204) {
@@ -101,6 +150,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+export function login(credentials: LoginCredentials): Promise<AuthUser> {
+  return request<AuthUser>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
+}
+
+export function getUsers(): Promise<ApiUser[]> {
+  return request<ApiUser[]>('/users');
+}
+
+export function createUser(userData: CreateUserPayload): Promise<ApiUser> {
+  return request<ApiUser>('/users', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+}
+
+export function toggleUserStatus(id: number, currentUserId: number): Promise<ApiUser> {
+  return request<ApiUser>(`/users/${id}/toggle-status?currentUserId=${currentUserId}`, {
+    method: 'PATCH',
+  });
+}
+
+export function searchCustomers(query: string): Promise<ApiCustomer[]> {
+  return request<ApiCustomer[]>(`/customers/search?q=${encodeURIComponent(query)}`);
+}
+
+export function getCustomers(): Promise<ApiCustomer[]> {
+  return request<ApiCustomer[]>('/customers');
 }
 
 export function getProducts(): Promise<ApiProduct[]> {

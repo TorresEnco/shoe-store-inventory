@@ -1,15 +1,11 @@
-/**
- * BottomNavBar.tsx
- *
- * Fixed mobile bottom navigation with three touch targets for the
- * Comercial Torres POS shell.
- */
+/** Fixed mobile bottom navigation for the Comercial Torres POS shell. */
 
 import type { TabType } from '../types/navigation';
 
 interface BottomNavBarProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
+  userRole?: 'ADMIN' | 'CASHIER';
 }
 
 // ─── Tab definitions ────────────────────────────────────────────────────────
@@ -87,7 +83,9 @@ const NAV_ITEMS: NavItem[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarProps) {
+export default function BottomNavBar({ activeTab, onTabChange, userRole }: BottomNavBarProps) {
+  const navItems = userRole === 'CASHIER' ? NAV_ITEMS.filter((item) => item.id !== 'metrics') : NAV_ITEMS;
+
   return (
     <nav
       role="tablist"
@@ -95,7 +93,7 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
       className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-stone-200 z-40 safe-area-pb"
     >
       <div className="flex items-stretch">
-        {NAV_ITEMS.map(({ id, label, icon }) => {
+        {navItems.map(({ id, label, icon }) => {
           const isActive = id === activeTab;
           return (
             <button

@@ -1,21 +1,17 @@
-/**
- * Header.tsx
- *
- * Top sticky mobile bar for the Comercial Torres POS shell.
- * Displays the store brand, register status, and a user profile dropdown with logout.
- */
-
+/** Top sticky mobile bar with brand, register status, and profile dropdown. */
 import { useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '../types/user';
-
+import ManageEmployeesModal from './ManageEmployeesModal';
+import CustomerDirectoryModal from './CustomerDirectoryModal';
 interface HeaderProps {
   currentUser: UserProfile;
   onLogout: () => void;
   onOpenSalesHistory: () => void;
 }
-
 export default function Header({ currentUser, onLogout, onOpenSalesHistory }: HeaderProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isEmployeesModalOpen, setIsEmployeesModalOpen] = useState(false);
+  const [isCustomersModalOpen, setIsCustomersModalOpen] = useState(false);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +99,27 @@ export default function Header({ currentUser, onLogout, onOpenSalesHistory }: He
 
           <div className="h-px bg-stone-100 my-2" />
 
+          {currentUser.role === 'ADMIN' && (
+            <>
+              <button
+                type="button"
+                onClick={() => { setIsProfileMenuOpen(false); setIsCustomersModalOpen(true); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-leather font-semibold rounded-xl hover:bg-leather/5 transition-colors"
+              >
+                <span aria-hidden="true">👥</span>
+                Directorio de Clientes
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsProfileMenuOpen(false); setIsEmployeesModalOpen(true); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-leather font-semibold rounded-xl hover:bg-leather/5 transition-colors"
+              >
+                <span aria-hidden="true">👤</span>
+                Gestionar Empleados
+              </button>
+            </>
+          )}
+
           <button
             type="button"
             onClick={handleLogout}
@@ -117,6 +134,16 @@ export default function Header({ currentUser, onLogout, onOpenSalesHistory }: He
           </button>
         </div>
       )}
+
+      <ManageEmployeesModal
+        isOpen={isEmployeesModalOpen}
+        onClose={() => setIsEmployeesModalOpen(false)}
+        currentUser={currentUser}
+      />
+      <CustomerDirectoryModal
+        isOpen={isCustomersModalOpen}
+        onClose={() => setIsCustomersModalOpen(false)}
+      />
     </header>
   );
 }

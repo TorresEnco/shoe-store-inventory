@@ -16,22 +16,15 @@ import InventoryView from './views/InventoryView';
 import MetricsView from './views/MetricsView';
 import type { Shoe } from './data/mockShoes';
 import { MOCK_SALES } from './data/mockSales';
-import { getProducts } from './services/api';
+import { getProducts, type AuthUser } from './services/api';
 import { mapProductToShoe } from './services/productMapper';
 import type { SaleRecord } from './types/sale';
 import type { TabType } from './types/navigation';
-import type { UserProfile } from './types/user';
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser] = useState<UserProfile>({
-    id: 1,
-    fullName: 'Carlos Torres',
-    username: 'carlos_torres',
-    role: 'ADMIN',
-  });
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [currentTab, setCurrentTab] = useState<TabType>('pos');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState(false);
@@ -56,6 +49,12 @@ export default function App() {
   useEffect(() => {
     void loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (currentUser?.role === 'CASHIER' && currentTab === 'metrics') {
+      setCurrentTab('pos');
+    }
+  }, [currentUser, currentTab]);
 
   const handleVoidSale = (saleId: string) => {
     const sale = sales.find((record) => record.id === saleId);
@@ -103,6 +102,7 @@ export default function App() {
           <InventoryView
             shoes={shoes}
             onSaveStock={setShoes}
+            userRole={currentUser?.role}
           />
         );
       case 'metrics':
@@ -110,8 +110,8 @@ export default function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <LoginView onLogin={() => setIsAuthenticated(true)} />;
+  if (!currentUser) {
+    return <LoginView onLogin={setCurrentUser} />;
   }
 
   return (
@@ -122,7 +122,10 @@ export default function App() {
     >
       <Header
         currentUser={currentUser}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={() => {
+          setCurrentUser(null);
+          setCurrentTab('pos');
+        }}
         onOpenSalesHistory={() => setIsSalesHistoryOpen(true)}
       />
 
@@ -168,7 +171,7 @@ export default function App() {
 
       {/* Bottom navigation is hidden whenever checkout modal is open */}
       {!isCheckoutOpen && !isSalesHistoryOpen && (
-        <BottomNavBar activeTab={currentTab} onTabChange={setCurrentTab} />
+        <BottomNavBar activeTab={currentTab} onTabChange={setCurrentTab} userRole={currentUser.role} />
       )}
 
       <SalesHistoryModal

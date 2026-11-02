@@ -4,14 +4,14 @@
  * Fullscreen mobile checkout modal with fixed header, scrollable body,
  * simplified payment methods (Efectivo & Yape/Plin), and pinned sticky footer.
  */
-
 import { useState } from 'react';
 import type { CartItem } from '../types/cart';
 import { processSale, type PaymentType } from '../services/api';
-import CheckoutYapeSection from './CheckoutYapeSection';
+import CheckoutPaymentSection, { type PaymentMethod } from './CheckoutPaymentSection';
+import CheckoutCustomerSection from './CheckoutCustomerSection';
 import CheckoutItemList from './CheckoutItemList';
 import CheckoutTotals from './CheckoutTotals';
-
+import CheckoutFooter from './CheckoutFooter';
 interface CheckoutModalProps {
   isOpen: boolean;
   cart: CartItem[];
@@ -19,8 +19,6 @@ interface CheckoutModalProps {
   onRemoveItem: (shoeId: string, size: number) => void;
   onConfirmSale: (customerName: string, paymentMethod: string) => void;
 }
-
-type PaymentMethod = 'yape' | 'cash';
 
 export default function CheckoutModal({
   isOpen,
@@ -31,6 +29,7 @@ export default function CheckoutModal({
 }: CheckoutModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yape');
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -50,6 +49,7 @@ export default function CheckoutModal({
       setErrorMessage(null);
       await processSale({
         customerName: finalCustomerName,
+        customerPhone: customerPhone.trim() || undefined,
         paymentType,
         items: cart.map((item) => ({
           variantId: item.variantId,
@@ -119,96 +119,30 @@ export default function CheckoutModal({
           <CheckoutItemList cart={cart} onRemoveItem={onRemoveItem} />
           <CheckoutTotals totalPairs={totalPairs} totalPrice={totalPrice} />
 
-          {/* Payment method selection: 2 equal buttons */}
-          <div>
-            <label className="text-xs font-bold text-stone-600 uppercase tracking-wider block mb-2">
-              Método de Pago
-            </label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition-all active:scale-95 ${
-                  paymentMethod === 'cash'
-                    ? 'bg-leather text-white border-leather shadow-sm'
-                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <span className="text-base">💵</span>
-                <span>Efectivo</span>
-              </button>
+          <CheckoutPaymentSection
+            paymentMethod={paymentMethod}
+            onSelectPaymentMethod={setPaymentMethod}
+            totalPrice={totalPrice}
+          />
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('yape')}
-                className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition-all active:scale-95 ${
-                  paymentMethod === 'yape'
-                    ? 'bg-leather text-white border-leather shadow-sm'
-                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <span className="text-base">📱</span>
-                <span>Yape / Plin</span>
-              </button>
-            </div>
-
-            {paymentMethod === 'yape' ? (
-              <CheckoutYapeSection total={totalPrice} />
-            ) : (
-              <div className="p-4 rounded-2xl bg-white border border-stone-200 text-center text-xs text-stone-600 leading-relaxed">
-                💵 Cobro en caja registradora. Verifique billetes auténticos al recibir efectivo.
-              </div>
-            )}
-          </div>
-
-          {/* Customer info */}
-          <div>
-            <label htmlFor="customer-name" className="text-xs font-bold text-stone-700 block mb-1">
-              Nombre del Cliente (opcional)
-            </label>
-            <input
-              id="customer-name"
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Ej. Carlos Mendoza (por defecto: Público General)"
-              className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-leather"
-            />
-          </div>
+          <CheckoutCustomerSection
+            name={customerName}
+            phone={customerPhone}
+            onChange={(name, phone) => {
+              setCustomerName(name);
+              setCustomerPhone(phone);
+            }}
+          />
         </div>
 
-        {/* BOTTOM: Pinned sticky footer */}
-        <footer className="flex-shrink-0 p-4 bg-white border-t border-stone-200 flex flex-col gap-2">
-          {errorMessage && (
-            <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
-              <span aria-hidden="true">⚠️</span>
-              <span>{errorMessage}</span>
-            </div>
-          )}
-          <button
-            type="button"
-            disabled={cart.length === 0 || isSubmitting}
-            onClick={handleFinishSale}
-            className="w-full py-3.5 rounded-2xl bg-leather-dark text-white font-bold text-sm shadow-lg transition-all active:scale-98 hover:brightness-110 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <span>
-              {isSubmitting
-                ? 'Procesando venta...'
-                : `Confirmar y Finalizar Venta (S/. ${totalPrice.toFixed(2)})`}
-            </span>
-            <span>{isSubmitting ? '⏳' : '✓'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleWhatsApp}
-            className="w-full py-2.5 rounded-2xl border border-stone-200 bg-stone-50 text-stone-700 font-semibold text-xs transition-all active:scale-98 hover:bg-stone-100 flex items-center justify-center gap-1.5"
-          >
-            <span>💬 Enviar ticket por WhatsApp al cliente</span>
-          </button>
-          <p className="text-center text-[10px] text-stone-400 mt-0.5">
-            🔒 Transacción local protegida · Comercial Torres POS
-          </p>
-        </footer>
+        <CheckoutFooter
+          totalPrice={totalPrice}
+          isSubmitting={isSubmitting}
+          isCartEmpty={cart.length === 0}
+          errorMessage={errorMessage}
+          onFinishSale={() => void handleFinishSale()}
+          onSendWhatsApp={handleWhatsApp}
+        />
       </div>
     </div>
   );

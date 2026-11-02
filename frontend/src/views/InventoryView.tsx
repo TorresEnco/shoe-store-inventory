@@ -16,9 +16,11 @@ import ProductFormModal from '../components/ProductFormModal';
 interface InventoryViewProps {
   shoes: Shoe[];
   onSaveStock: (updatedShoes: Shoe[]) => void;
+  userRole?: 'ADMIN' | 'CASHIER';
 }
 
-export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps) {
+export default function InventoryView({ shoes, onSaveStock, userRole }: InventoryViewProps) {
+  const canEditCatalog = userRole !== 'CASHIER';
   const [selectedShoeId, setSelectedShoeId] = useState<string>(shoes[0]?.id ?? '');
   const [activeColor, setActiveColor] = useState<string>(shoes[0]?.color ?? '');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,13 +100,13 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
         <InventoryHeader
           searchQuery={searchQuery} onSearchChange={setSearchQuery} shoes={shoes}
           onSelectShoe={(shoe) => { setSelectedShoeId(shoe.id); setActiveColor(shoe.color); }}
-          onNewProduct={() => { setShoeToEdit(null); setIsModalOpen(true); }}
+          onNewProduct={canEditCatalog ? () => { setShoeToEdit(null); setIsModalOpen(true); } : undefined}
         />
 
         {selectedShoe && (
           <ShoeColorCard
             shoe={selectedShoe} activeColor={activeColor} onSelectColor={setActiveColor}
-            onEdit={() => { setShoeToEdit(selectedShoe); setIsModalOpen(true); }}
+            onEdit={canEditCatalog ? () => { setShoeToEdit(selectedShoe); setIsModalOpen(true); } : undefined}
           />
         )}
 
