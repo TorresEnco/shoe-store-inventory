@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+import type { UserProfile } from '../types/user';
+
+const API_BASE_URL = '/api';
 
 export interface ApiVariant {
   id: number;
@@ -33,7 +35,6 @@ export interface ProcessSaleItem {
 }
 
 export interface ProcessSalePayload {
-  userId?: number | null;
   customerName?: string;
   paymentType: PaymentType;
   items: ProcessSaleItem[];
@@ -82,19 +83,47 @@ export interface ParetoReport {
   liquidationSuggestions: string[];
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-  });
+type Csrf = { headerName: string; token: string };
+let sessionToken: Csrf | undefined;
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new Error(detail || `Error ${response.status} al comunicarse con el servidor`);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body) headers.set('Content-Type', 'application/json');
+  if (init?.method && !['GET', 'HEAD'].includes(init.method)) {
+    const csrf = sessionToken ?? await request<Csrf>('/auth/csrf');
+    headers.set(csrf.headerName, csrf.token);
   }
+  let response: Response;
+  try {
+    response = await fetch(API_BASE_URL + path, {
+      ...init, credentials: 'same-origin', headers, cache: 'no-store', signal: AbortSignal.timeout(15000),
+    });
+  } catch {
+    throw new Error('Sin respuesta del servidor. Comprueba la conexión y el resultado antes de reintentar.');
+  }
+  if (response.status === 401) {
+    sessionToken = undefined;
+    if (path !== '/auth/login') window.dispatchEvent(new Event('session-expired'));
+    throw new Error(path === '/auth/login' ? 'Usuario o contraseña incorrectos.' : 'Tu sesión ha caducado.');
+  }
+  if (response.status === 403) throw new Error('Acceso denegado. Comprueba tus permisos o recarga la página para renovar la sesión.');
+  if (response.status === 429 && path === '/auth/login') {
+    throw new Error('Demasiados intentos de inicio de sesión. Espera unos minutos y vuelve a intentarlo.');
+  }
+  if (path === '/sales' && response.status === 400) {
+    throw new SaleRejectedError('Revisa los datos del cobro antes de volver a intentarlo.');
+  }
+  if (response.status === 409) {
+    const problem: unknown = await response.json().catch(() => null);
+    if (problem && typeof problem === 'object' && 'detail' in problem && typeof problem.detail === 'string') {
+      if (path === '/sales' && 'code' in problem && problem.code === 'stock_conflict') {
+        throw new SaleRejectedError(problem.detail);
+      }
+      throw new Error(problem.detail);
+    }
+    throw new Error('La operación entra en conflicto con el estado actual. Actualiza los datos.');
+  }
+  if (!response.ok) throw new Error('El servidor rechazó la operación (' + response.status + ').');
 
   if (response.status === 204) {
     return undefined as T;
@@ -114,9 +143,12 @@ export function updateStock(variantId: number, delta: number): Promise<ApiVarian
   });
 }
 
-export function processSale(saleData: ProcessSalePayload): Promise<ApiSale> {
+export class SaleRejectedError extends Error {}
+
+export function processSale(saleData: ProcessSalePayload, key: string): Promise<ApiSale> {
   return request<ApiSale>('/sales', {
     method: 'POST',
+    headers: { 'Idempotency-Key': key },
     body: JSON.stringify(saleData),
   });
 }
@@ -133,4 +165,22 @@ export function cancelSale(saleId: number): Promise<ApiSale> {
 
 export function getParetoReport(days: number): Promise<ParetoReport> {
   return request<ParetoReport>(`/analytics/pareto?days=${days}`);
+}
+
+export async function currentSession() {
+  sessionToken = await request<Csrf>('/auth/csrf');
+  return request<UserProfile>('/auth/me');
+}
+
+export async function login(username: string, password: string) {
+  sessionToken = undefined;
+  const profile = await request<UserProfile>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+  sessionToken = await request<Csrf>('/auth/csrf');
+  return profile;
+}
+
+export async function logout() {
+  await request<void>('/auth/logout', { method: 'POST' });
+  sessionToken = undefined;
+  // The next login fetches a token bound to its new, anonymous session.
 }

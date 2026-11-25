@@ -8,15 +8,28 @@
 import { useState, type FormEvent } from 'react';
 
 interface LoginViewProps {
-  onLogin: () => void;
+  onLogin: (username: string, password: string) => Promise<void>;
+  notice?: string;
 }
 
-export default function LoginView({ onLogin }: LoginViewProps) {
+export default function LoginView({ onLogin, notice }: LoginViewProps) {
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onLogin();
+    if (busy) return;
+    const data = new FormData(e.currentTarget);
+    setBusy(true);
+    setError('');
+    try {
+      await onLogin(String(data.get('username')), String(data.get('password')));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -55,6 +68,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
             </svg>
             <input
               id="username"
+              required
               name="username"
               type="text"
               autoComplete="username"
@@ -75,6 +89,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
             </svg>
             <input
               id="password"
+              required
               name="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
@@ -96,11 +111,13 @@ export default function LoginView({ onLogin }: LoginViewProps) {
           </div>
         </div>
 
+        {(error || notice) && <p role="alert" className="text-sm text-red-700">{error || notice}</p>}
         <button
+          disabled={busy}
           type="submit"
           className="w-full py-4 bg-leather hover:bg-leather-dark text-white font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
         >
-          Iniciar Sesión ➔
+          {busy ? 'Iniciando sesión…' : 'Iniciar sesión'}
         </button>
       </form>
 

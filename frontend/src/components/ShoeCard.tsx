@@ -8,16 +8,17 @@
  * size is "open" so it can pass it to QuantityDrawer.
  */
 
+import { useState } from 'react';
 import type { Shoe, SizeEntry } from '../data/mockShoes';
 
 interface ShoeCardProps {
   shoe: Shoe;
   /** The size that is currently highlighted for this card (null = none). */
-  selectedSize: number | null;
+  selectedVariantId: number | null;
   /** Called when the user taps an available size chip. */
-  onSizeSelect: (size: number) => void;
+  onSizeSelect: (entry: SizeEntry, color: string) => void;
   /** Quantity already in cart for a given size (0 if absent). */
-  cartQtyForSize: (size: number) => number;
+  cartQtyForVariant: (variantId: number) => number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -105,15 +106,18 @@ function ShoeThumbnail({ shoe }: { shoe: Shoe }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ShoeCard({ shoe, selectedSize, onSizeSelect, cartQtyForSize }: ShoeCardProps) {
-  const sortedVariants = [...shoe.sizes].sort((a, b) => Number(a.size) - Number(b.size));
+export default function ShoeCard({ shoe, selectedVariantId, onSizeSelect, cartQtyForVariant }: ShoeCardProps) {
+  const [selectedColor, setSelectedColor] = useState(shoe.color);
+  const colors = shoe.colors?.length ? shoe.colors : [{ color: shoe.color, swatchHex: shoe.swatchHex, sizes: shoe.sizes }];
+  const active = colors.find(group => group.color === selectedColor) ?? colors[0];
+  const sortedVariants = [...active.sizes].sort((a, b) => Number(a.size) - Number(b.size));
 
   return (
     <article
       className="flex gap-3.5 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-sm transition-shadow hover:shadow-md"
       aria-label={`${shoe.name} – ${shoe.brand}`}
     >
-      <ShoeThumbnail shoe={shoe} />
+      <ShoeThumbnail shoe={{ ...shoe, color: active.color, swatchHex: active.swatchHex }} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {/* Name + price */}
@@ -121,14 +125,23 @@ export default function ShoeCard({ shoe, selectedSize, onSizeSelect, cartQtyForS
           <div className="min-w-0">
             <h3 className="truncate text-sm font-bold leading-snug text-stone-800">{shoe.name}</h3>
             <p className="text-[11px] font-medium text-stone-400">
-              {shoe.brand} · <span className="text-stone-500">{shoe.color}</span>
+              {shoe.brand} · <span className="text-stone-500">{active.color}</span>
             </p>
           </div>
           <span className="flex-shrink-0 rounded-lg bg-amber-50 px-2 py-1 text-xs font-bold text-amber-accent">
-            {formatSoles(shoe.price)}
+            {formatSoles(sortedVariants[0]?.price ?? shoe.price)}
           </span>
         </div>
 
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Color">
+          {colors.map(group => (
+            <button type="button" key={group.color} aria-pressed={active.color === group.color}
+              onClick={() => setSelectedColor(group.color)}
+              className="min-h-11 rounded-lg border border-stone-300 px-3 text-xs text-stone-800 aria-pressed:bg-leather aria-pressed:text-white">
+              {group.color}
+            </button>
+          ))}
+        </div>
         {/* Size chips */}
         <div
           className="flex flex-wrap gap-1.5"
@@ -137,11 +150,11 @@ export default function ShoeCard({ shoe, selectedSize, onSizeSelect, cartQtyForS
         >
           {sortedVariants.map((entry) => (
             <SizeChip
-              key={entry.size}
+              key={entry.variantId ?? entry.size}
               entry={entry}
-              isSelected={selectedSize === entry.size}
-              cartQty={cartQtyForSize(entry.size)}
-              onSelect={() => onSizeSelect(entry.size)}
+              isSelected={selectedVariantId === entry.variantId}
+              cartQty={entry.variantId ? cartQtyForVariant(entry.variantId) : 0}
+              onSelect={() => onSizeSelect(entry, active.color)}
             />
           ))}
         </div>

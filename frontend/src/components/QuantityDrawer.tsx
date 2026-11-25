@@ -47,13 +47,10 @@ function formatSoles(n: number): string {
   return `S/. ${n.toFixed(2)}`;
 }
 
-/**
- * Clamps a raw string to a valid price.
- * Returns the previous value if the input is non-numeric or negative.
- */
-function parsePrice(raw: string, fallback: number): number {
-  const parsed = parseFloat(raw);
-  return isNaN(parsed) || parsed < 0 ? fallback : parsed;
+function parsePrice(raw: string): number | null {
+  const decimal = /^(?:\d+(?:\.\d{0,2}0*)?|\.\d{1,2}0*)$/;
+  const parsed = Number(raw);
+  return decimal.test(raw) && parsed > 0 && parsed < 1e36 ? parsed : null;
 }
 
 // ─── Stepper button ───────────────────────────────────────────────────────────
@@ -129,7 +126,8 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
   }
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const parsedUnitPrice = parsePrice(unitPriceStr, variant.catalogPrice);
+  const enteredPrice = parsePrice(unitPriceStr);
+  const parsedUnitPrice = enteredPrice ?? variant.catalogPrice;
   const subtotal = parsedUnitPrice * qty;
   const isDiscounted = parsedUnitPrice < variant.catalogPrice - 0.001;
   const isPremium    = parsedUnitPrice > variant.catalogPrice + 0.001;
@@ -147,10 +145,11 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
 
   /** On blur, normalise the price string to 2 decimal places. */
   const handlePriceBlur = () => {
-    setUnitPriceStr(parsedUnitPrice.toFixed(2));
+    if (enteredPrice !== null) setUnitPriceStr(enteredPrice.toFixed(2));
   };
 
   const handleConfirm = () => {
+    if (enteredPrice === null) return;
     onConfirm({
       shoeId: variant.shoeId,
       variantId: variant.variantId,
@@ -277,11 +276,13 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
               type="number"
               inputMode="decimal"
               step="0.01"
-              min="0"
+              min="0.01"
               value={unitPriceStr}
               onChange={(e) => setUnitPriceStr(e.target.value)}
               onBlur={handlePriceBlur}
               aria-label="Precio unitario de venta en soles"
+              aria-invalid={enteredPrice === null}
+              aria-describedby={enteredPrice === null ? 'drawer-price-error' : undefined}
               className={[
                 'w-full rounded-xl border py-2.5 pl-10 pr-4',
                 'text-right text-base font-bold tabular-nums',
@@ -296,6 +297,11 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
               ].join(' ')}
             />
           </div>
+          {enteredPrice === null && (
+            <p id="drawer-price-error" className="mt-1.5 text-xs font-semibold text-rose-700">
+              Introduce un precio mayor a cero y con hasta dos decimales.
+            </p>
+          )}
 
           {/* Discount / premium amount hint */}
           {(isDiscounted || isPremium) && (
@@ -337,11 +343,13 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
           <button
             type="button"
             onClick={handleConfirm}
+            disabled={enteredPrice === null}
             className={[
               'flex-[2] rounded-xl bg-leather py-3',
               'text-sm font-bold text-white shadow-md',
               'transition-all duration-150 active:scale-[0.98] hover:bg-leather-dark',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leather/50',
+              'disabled:opacity-50',
             ].join(' ')}
           >
             + Agregar a la Venta

@@ -31,6 +31,6 @@ export interface CartItem {
 }
 
 /** Unique key for a (shoe × size) combination inside the cart Map. */
-export function cartKey(shoeId: string, size: number): string {
-  return `${shoeId}::${size}`;
+export function cartKey(variantId: number): string {
+  return String(variantId);
 }

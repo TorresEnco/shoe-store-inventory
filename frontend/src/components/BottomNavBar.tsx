@@ -8,6 +8,7 @@
 import type { TabType } from '../types/navigation';
 
 interface BottomNavBarProps {
+  admin: boolean;
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
 }
@@ -87,7 +88,7 @@ const NAV_ITEMS: NavItem[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarProps) {
+export default function BottomNavBar({ activeTab, onTabChange, admin }: BottomNavBarProps) {
   return (
     <nav
       role="tablist"
@@ -95,7 +96,7 @@ export default function BottomNavBar({ activeTab, onTabChange }: BottomNavBarPro
       className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-stone-200 z-40 safe-area-pb"
     >
       <div className="flex items-stretch">
-        {NAV_ITEMS.map(({ id, label, icon }) => {
+        {NAV_ITEMS.filter(item => admin || item.id !== 'metrics').map(({ id, label, icon }) => {
           const isActive = id === activeTab;
           return (
             <button

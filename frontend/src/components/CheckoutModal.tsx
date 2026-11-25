@@ -2,12 +2,12 @@
  * CheckoutModal.tsx
  *
  * Fullscreen mobile checkout modal with fixed header, scrollable body,
- * simplified payment methods (Efectivo & Yape/Plin), and pinned sticky footer.
+ * cash payment, and pinned sticky footer.
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CartItem } from '../types/cart';
-import { processSale, type PaymentType } from '../services/api';
+import { processSale, SaleRejectedError } from '../services/api';
 import CheckoutYapeSection from './CheckoutYapeSection';
 import CheckoutItemList from './CheckoutItemList';
 import CheckoutTotals from './CheckoutTotals';
@@ -16,11 +16,9 @@ interface CheckoutModalProps {
   isOpen: boolean;
   cart: CartItem[];
   onClose: () => void;
-  onRemoveItem: (shoeId: string, size: number) => void;
-  onConfirmSale: (customerName: string, paymentMethod: string) => void;
+  onRemoveItem: (variantId: number) => void;
+  onConfirmSale: () => void;
 }
-
-type PaymentMethod = 'yape' | 'cash';
 
 export default function CheckoutModal({
   isOpen,
@@ -29,10 +27,12 @@ export default function CheckoutModal({
   onRemoveItem,
   onConfirmSale,
 }: CheckoutModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('yape');
   const [customerName, setCustomerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasPendingSale, setHasPendingSale] = useState(false);
+  const pendingKey = useRef<string | null>(null);
+  const submitting = useRef(false);
 
   if (!isOpen) return null;
 
@@ -40,27 +40,38 @@ export default function CheckoutModal({
   const totalPrice = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
   const handleFinishSale = async () => {
-    if (isSubmitting || cart.length === 0) return;
+    if (submitting.current || cart.length === 0) return;
 
-    const paymentType: PaymentType = paymentMethod === 'cash' ? 'CASH' : 'YAPE_PLIN';
     const finalCustomerName = customerName.trim() || 'Público General';
 
     try {
+      pendingKey.current ??= crypto.randomUUID();
+      submitting.current = true;
+      setHasPendingSale(true);
       setIsSubmitting(true);
       setErrorMessage(null);
       await processSale({
         customerName: finalCustomerName,
-        paymentType,
+        paymentType: 'CASH',
         items: cart.map((item) => ({
           variantId: item.variantId,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
         })),
-      });
-      onConfirmSale(finalCustomerName, paymentMethod);
-    } catch {
-      setErrorMessage('No se pudo registrar la venta. Verifica la conexión e intenta nuevamente.');
+      }, pendingKey.current);
+      pendingKey.current = null;
+      setHasPendingSale(false);
+      onConfirmSale();
+    } catch (cause) {
+      if (cause instanceof SaleRejectedError) {
+        pendingKey.current = null;
+        setHasPendingSale(false);
+        setErrorMessage(cause.message);
+      } else {
+        setErrorMessage('El resultado del cobro está pendiente. Reintenta este mismo cobro para confirmarlo.');
+      }
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   };
@@ -81,6 +92,7 @@ export default function CheckoutModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={hasPendingSale}
               className="p-1 rounded-full text-stone-600 hover:bg-stone-200 active:scale-95"
               aria-label="Volver"
             >
@@ -94,6 +106,7 @@ export default function CheckoutModal({
           <button
             type="button"
             onClick={onClose}
+            disabled={hasPendingSale}
             className="h-8 w-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-300 active:scale-95"
             aria-label="Cerrar modal"
           >
@@ -116,50 +129,16 @@ export default function CheckoutModal({
             </div>
           </div>
 
+          <fieldset disabled={hasPendingSale}>
           <CheckoutItemList cart={cart} onRemoveItem={onRemoveItem} />
           <CheckoutTotals totalPairs={totalPairs} totalPrice={totalPrice} />
 
-          {/* Payment method selection: 2 equal buttons */}
-          <div>
-            <label className="text-xs font-bold text-stone-600 uppercase tracking-wider block mb-2">
-              Método de Pago
-            </label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition-all active:scale-95 ${
-                  paymentMethod === 'cash'
-                    ? 'bg-leather text-white border-leather shadow-sm'
-                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <span className="text-base">💵</span>
-                <span>Efectivo</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('yape')}
-                className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition-all active:scale-95 ${
-                  paymentMethod === 'yape'
-                    ? 'bg-leather text-white border-leather shadow-sm'
-                    : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <span className="text-base">📱</span>
-                <span>Yape / Plin</span>
-              </button>
-            </div>
-
-            {paymentMethod === 'yape' ? (
-              <CheckoutYapeSection total={totalPrice} />
-            ) : (
-              <div className="p-4 rounded-2xl bg-white border border-stone-200 text-center text-xs text-stone-600 leading-relaxed">
-                💵 Cobro en caja registradora. Verifique billetes auténticos al recibir efectivo.
-              </div>
-            )}
-          </div>
+          <section className="my-4 space-y-2" aria-label="Método de pago">
+            <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800">
+              Pago en efectivo
+            </p>
+            <CheckoutYapeSection />
+          </section>
 
           {/* Customer info */}
           <div>
@@ -175,12 +154,13 @@ export default function CheckoutModal({
               className="w-full rounded-xl border border-stone-200 bg-white py-2.5 px-3 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-leather"
             />
           </div>
+          </fieldset>
         </div>
 
         {/* BOTTOM: Pinned sticky footer */}
         <footer className="flex-shrink-0 p-4 bg-white border-t border-stone-200 flex flex-col gap-2">
           {errorMessage && (
-            <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
+            <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
               <span aria-hidden="true">⚠️</span>
               <span>{errorMessage}</span>
             </div>
@@ -194,13 +174,15 @@ export default function CheckoutModal({
             <span>
               {isSubmitting
                 ? 'Procesando venta...'
-                : `Confirmar y Finalizar Venta (S/. ${totalPrice.toFixed(2)})`}
+                : hasPendingSale ? 'Reintentar el mismo cobro'
+                : `Confirmar cobro en efectivo (S/. ${totalPrice.toFixed(2)})`}
             </span>
             <span>{isSubmitting ? '⏳' : '✓'}</span>
           </button>
           <button
             type="button"
             onClick={handleWhatsApp}
+            disabled={hasPendingSale}
             className="w-full py-2.5 rounded-2xl border border-stone-200 bg-stone-50 text-stone-700 font-semibold text-xs transition-all active:scale-98 hover:bg-stone-100 flex items-center justify-center gap-1.5"
           >
             <span>💬 Enviar ticket por WhatsApp al cliente</span>

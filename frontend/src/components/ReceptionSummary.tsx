@@ -17,7 +17,6 @@ export default function ReceptionSummary({
   onSave,
   onDiscard,
 }: ReceptionSummaryProps) {
-  const isZeroDiff = totalDiff === 0;
   const isDirty = changedCount > 0;
 
   const diffLabel = totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`;
@@ -67,10 +66,10 @@ export default function ReceptionSummary({
         <button
           type="button"
           onClick={onSave}
-          disabled={isZeroDiff}
+          disabled={!isDirty}
           className={[
             'flex w-full items-center justify-center gap-2 rounded-xl py-3.5 px-4 text-sm font-bold shadow-md transition-all sm:text-base',
-            isZeroDiff
+            !isDirty
               ? 'cursor-not-allowed bg-stone-300 text-stone-500'
               : 'bg-leather-dark text-white hover:bg-leather active:scale-[0.99]',
           ].join(' ')}

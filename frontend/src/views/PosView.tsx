@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import type { Shoe } from '../data/mockShoes';
+import type { Shoe, SizeEntry } from '../data/mockShoes';
 import type { CartItem } from '../types/cart';
 import { cartKey } from '../types/cart';
 import ShoeCard from '../components/ShoeCard';
@@ -29,7 +29,7 @@ export default function PosView({
   onCheckoutOpenChange,
   onSaleCompleted,
 }: PosViewProps) {
-  const shoeList = shoes ?? [];
+  const shoeList = (shoes ?? []).filter(shoe => shoe.status !== 'INACTIVE');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FilterCategory>('Todas');
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
@@ -44,29 +44,29 @@ export default function PosView({
   };
 
   const cartArray = [...cart.values()];
-  const getCartQty = (shoeId: string, size: number): number =>
-    cart.get(cartKey(shoeId, size))?.quantity ?? 0;
+  const getCartQty = (variantId: number): number =>
+    cart.get(cartKey(variantId))?.quantity ?? 0;
 
-  const openDrawer = (shoeId: string, size: number) => {
-    const shoe = shoeList.find((s) => s.id === shoeId)!;
-    const sizeEntry = shoe.sizes.find((se) => se.size === size)!;
-    const existing = cart.get(cartKey(shoeId, size));
+  const openDrawer = (shoe: Shoe, sizeEntry: SizeEntry, color: string) => {
+    if (!sizeEntry.variantId || sizeEntry.stock <= 0) return;
+    const existing = cart.get(cartKey(sizeEntry.variantId));
+    const price = sizeEntry.price ?? shoe.price;
     setDrawerVariant({
-      shoeId,
+      shoeId: shoe.id,
       variantId: sizeEntry.variantId ?? 0,
       name: shoe.name,
       brand: shoe.brand,
-      color: shoe.color,
-      size,
-      catalogPrice: shoe.price,
+      color,
+      size: sizeEntry.size,
+      catalogPrice: price,
       maxStock: sizeEntry.stock,
-      existingQty: getCartQty(shoeId, size),
-      existingUnitPrice: existing?.unitPrice ?? shoe.price,
+      existingQty: getCartQty(sizeEntry.variantId),
+      existingUnitPrice: existing?.unitPrice ?? price,
     });
   };
 
   const handleConfirm = (item: CartItem) => {
-    const key = cartKey(item.shoeId, item.size);
+    const key = cartKey(item.variantId);
     setCart((prev) => {
       const next = new Map(prev);
       if (item.quantity <= 0) next.delete(key);
@@ -76,10 +76,10 @@ export default function PosView({
     setDrawerVariant(null);
   };
 
-  const handleRemoveItem = (shoeId: string, size: number) => {
+  const handleRemoveItem = (variantId: number) => {
     setCart((prev) => {
       const next = new Map(prev);
-      next.delete(cartKey(shoeId, size));
+      next.delete(cartKey(variantId));
       if (next.size === 0) setCheckoutOpen(false);
       return next;
     });
@@ -137,9 +137,9 @@ export default function PosView({
               <li key={shoe.id}>
                 <ShoeCard
                   shoe={shoe}
-                  selectedSize={drawerVariant?.shoeId === shoe.id ? drawerVariant.size : null}
-                  onSizeSelect={(size) => openDrawer(shoe.id, size)}
-                  cartQtyForSize={(size) => getCartQty(shoe.id, size)}
+                  selectedVariantId={drawerVariant?.variantId ?? null}
+                  onSizeSelect={(entry, color) => openDrawer(shoe, entry, color)}
+                  cartQtyForVariant={getCartQty}
                 />
               </li>
             ))}

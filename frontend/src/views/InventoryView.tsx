@@ -13,15 +13,20 @@ import SizeRestockRow from '../components/SizeRestockRow';
 import ReceptionSummary from '../components/ReceptionSummary';
 import ProductFormModal from '../components/ProductFormModal';
 
+import { updateStock } from '../services/api';
+
 interface InventoryViewProps {
+  reload: () => Promise<void>;
+  admin: boolean;
   shoes: Shoe[];
   onSaveStock: (updatedShoes: Shoe[]) => void;
 }
 
-export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps) {
+export default function InventoryView({ shoes, onSaveStock, admin, reload }: InventoryViewProps) {
   const [selectedShoeId, setSelectedShoeId] = useState<string>(shoes[0]?.id ?? '');
   const [activeColor, setActiveColor] = useState<string>(shoes[0]?.color ?? '');
   const [searchQuery, setSearchQuery] = useState('');
+  const [saving, setSaving] = useState(false);
   const [stockDraft, setStockDraft] = useState<Record<string, number>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,22 +61,25 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
     setStockDraft(updated);
   };
 
-  const handleSave = () => {
-    if (totalDiff === 0) return;
-    const nextShoes = shoes.map((shoe) => {
-      if (shoe.id !== selectedShoe.id) return shoe;
-      const newColors = (shoe.colors || []).map((col) =>
-        col.color !== activeColor
-          ? col
-          : { ...col, sizes: col.sizes.map((se) => ({ ...se, stock: getStockCount(se.size, se.stock) })) }
-      );
-      const newSizes = currentSizes.map((se) => ({ ...se, stock: getStockCount(se.size, se.stock) }));
-      return { ...shoe, colors: newColors.length > 0 ? newColors : undefined, sizes: shoe.color === activeColor ? newSizes : shoe.sizes };
-    });
-    onSaveStock(nextShoes);
-    setStockDraft({});
-    setToastMessage('¡Inventario actualizado correctamente!');
-    setTimeout(() => setToastMessage(null), 3500);
+  const handleSave = async () => {
+    if (saving || !changedCount) return;
+    setSaving(true);
+    try {
+      for (const entry of currentSizes) {
+        const delta = getStockCount(entry.size, entry.stock) - entry.stock;
+        if (!delta) continue;
+        if (!entry.variantId) throw new Error('Variante sin registrar.');
+        await updateStock(entry.variantId, delta);
+      }
+      setToastMessage('Ajustes registrados.');
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Error al registrar el ajuste.';
+      setToastMessage(message + ' Revisa las existencias antes de continuar.');
+    } finally {
+      setStockDraft({});
+      await reload();
+      setSaving(false);
+    }
   };
 
   const handleSaveProduct = (prod: Shoe) => {
@@ -88,8 +96,7 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
       {toastMessage && (
         <div className="fixed top-16 left-0 right-0 z-50 mx-auto max-w-md px-4 animate-bounce">
           <div className="flex items-center gap-2 rounded-2xl bg-emerald-700 px-4 py-3 text-white shadow-xl">
-            <span className="text-xl">✅</span>
-            <span className="text-xs font-bold">{toastMessage}</span>
+            <span role="status" className="text-xs font-bold">{toastMessage}</span>
           </div>
         </div>
       )}
@@ -98,13 +105,13 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
         <InventoryHeader
           searchQuery={searchQuery} onSearchChange={setSearchQuery} shoes={shoes}
           onSelectShoe={(shoe) => { setSelectedShoeId(shoe.id); setActiveColor(shoe.color); }}
-          onNewProduct={() => { setShoeToEdit(null); setIsModalOpen(true); }}
+          onNewProduct={admin ? () => { setShoeToEdit(null); setIsModalOpen(true); } : undefined}
         />
 
         {selectedShoe && (
           <ShoeColorCard
             shoe={selectedShoe} activeColor={activeColor} onSelectColor={setActiveColor}
-            onEdit={() => { setShoeToEdit(selectedShoe); setIsModalOpen(true); }}
+            onEdit={admin ? () => { setShoeToEdit(selectedShoe); setIsModalOpen(true); } : undefined}
           />
         )}
 
@@ -132,7 +139,7 @@ export default function InventoryView({ shoes, onSaveStock }: InventoryViewProps
           </div>
         </div>
 
-        <ReceptionSummary changedCount={changedCount} totalDiff={totalDiff} onSave={handleSave} onDiscard={handleDiscard} />
+        <fieldset disabled={saving}><ReceptionSummary changedCount={changedCount} totalDiff={totalDiff} onSave={handleSave} onDiscard={handleDiscard} /></fieldset>
       </div>
 
       <ProductFormModal

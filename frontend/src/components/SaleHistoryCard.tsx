@@ -2,7 +2,7 @@ import type { SaleRecord } from '../types/sale';
 
 interface SaleHistoryCardProps {
   sale: SaleRecord;
-  onVoid: (sale: SaleRecord) => void;
+  onVoid?: (sale: SaleRecord) => void;
 }
 
 export default function SaleHistoryCard({ sale, onVoid }: SaleHistoryCardProps) {
@@ -40,13 +40,13 @@ export default function SaleHistoryCard({ sale, onVoid }: SaleHistoryCardProps) 
             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
               Pagado
             </span>
-            <button
+            {onVoid && <button
               type="button"
               onClick={() => onVoid(sale)}
               className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-600 transition-colors hover:bg-red-100 active:scale-95"
             >
               ✕ Anular Venta
-            </button>
+            </button>}
           </div>
         ) : (
           <div className="flex items-center gap-2">

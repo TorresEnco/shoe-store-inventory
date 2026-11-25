@@ -8,7 +8,7 @@ import type { CartItem } from '../types/cart';
 
 interface CheckoutItemListProps {
   cart: CartItem[];
-  onRemoveItem: (shoeId: string, size: number) => void;
+  onRemoveItem: (variantId: number) => void;
 }
 
 export default function CheckoutItemList({ cart, onRemoveItem }: CheckoutItemListProps) {
@@ -23,7 +23,7 @@ export default function CheckoutItemList({ cart, onRemoveItem }: CheckoutItemLis
       <div className="flex flex-col gap-2">
         {cart.map((item) => (
           <div
-            key={`${item.shoeId}-${item.size}`}
+            key={item.variantId}
             className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-stone-200"
           >
             <div className="flex items-center gap-2.5">
@@ -46,7 +46,7 @@ export default function CheckoutItemList({ cart, onRemoveItem }: CheckoutItemLis
               </span>
               <button
                 type="button"
-                onClick={() => onRemoveItem(item.shoeId, item.size)}
+                onClick={() => onRemoveItem(item.variantId)}
                 className="text-[10px] font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-0.5 active:scale-95"
               >
                 🗑️ Quitar
