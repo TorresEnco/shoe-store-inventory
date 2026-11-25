@@ -17,6 +17,7 @@
 - Prueba cada regla de negocio que cambie. Para migraciones, concilia datos, versiona el SQL y verifica instalación y actualización en PostgreSQL aislado antes de autorizar su aplicación.
 - Revisa Git antes y después. Preserva cambios locales y limita commits, ramas, merges, pushes y operaciones con datos persistentes a lo autorizado. Mantén la corrección acotada al paquete seleccionado.
 - Al cerrar una funcionalidad o corrección coherente y comprobada, sugiere un commit y explica brevemente qué avance guardaría. Sugiere subir la rama a GitHub cuando haya un hito revisable o convenga respaldar el trabajo. Distingue commit local, push y publicación en producción, informa las verificaciones pendientes y aprovecha las autorizaciones ya concedidas. Cuando falte autorización, presenta el alcance concreto antes de pedirla. Evita acumular funcionalidades independientes sin avisar.
+- Usa una rama por funcionalidad o corrección con alcance propio, agrupando código, pruebas y documentación relacionados. Evita abrir ramas por archivo o ajuste menor. Antes de crearla, revisa la base y los cambios pendientes. Si depende de una rama aún sin integrar, créala desde esa rama y explica la dependencia. Usa nombres descriptivos como `feature/catalog-persistence` o `fix/sale-validation`. Recomienda la integración cuando el cambio esté comprobado y revisable, respetando la autorización del usuario para merges y pushes.
 
 ## Verificación
 

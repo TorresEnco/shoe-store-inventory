@@ -84,7 +84,9 @@ Valoración cualitativa **3/10**. El árbol local confirma `SEC-01`, `TX-01` y l
 - **Corrección y dependencias.** Verificar destino de pago, usar QR válido o instrucciones explícitas y pedir confirmación de recepción para el flujo manual. Manejar errores de portapapeles. Depende de información del comercio.
 - **Prueba y aceptación.** Sin configuración el medio queda inhabilitado. Con datos de prueba, se comprueba el destino y el mensaje de fallo de copia.
 
-### POS-01 · HIGH · TODO · P6 · Alta
+### POS-01 · HIGH · IN_PROGRESS · P6 · Alta
+
+- **Avance de catálogo.** El alta y la edición usan la API y muestran la respuesta persistida. ADMIN puede cambiar datos, estado y precios, y añadir colores y tallas. Las variantes existentes conservan su identidad y el stock se modifica mediante el ajuste dedicado. Pasaron permisos y validación HTTP, persistencia en PostgreSQL aislado y recorrido de interfaz con API sintética. Las métricas continúan pendientes de P7a. [Evidencia de catálogo](docs/rup/pruebas/PRUEBAS.md#pos-01--persistencia-del-catálogo)
 
 - **Evidencia, causa e impacto.** La venta y el catálogo usan API, pero ajustes, altas, historial, anulación y métricas se simulan. La UI confirma escrituras locales que se pierden al recargar. El ajuste también impide guardar cambios por talla con saldo neto cero. [App.tsx:38](frontend/src/App.tsx#L38) · [App.tsx:60](frontend/src/App.tsx#L60) · [InventoryView.tsx:46](frontend/src/views/InventoryView.tsx#L46) · [ReceptionSummary.tsx:70](frontend/src/components/ReceptionSummary.tsx#L70) · [MetricsView.tsx:17](frontend/src/views/MetricsView.tsx#L17)
 - **Corrección y dependencias.** Conectar capacidades persistentes por flujo, usar `changedCount` y mantener deshabilitadas o identificadas las acciones de demostración. Edición completa requiere contrato propio. Depende de P1–P4 y de `ANA-01` y `ANA-02` para habilitar Pareto.

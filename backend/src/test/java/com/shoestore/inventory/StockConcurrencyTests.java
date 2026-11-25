@@ -221,6 +221,75 @@ class StockConcurrencyTests {
 			cancellations.cancelSale(colorSaleId);
 			assertEquals(3, stock(jdbc, firstColor));
 			assertEquals(4, stock(jdbc, secondColor));
+
+			var catalog = app.getBean(com.shoestore.inventory.product.application.ports.in.SaveCatalogUseCase.class);
+			var product = new com.shoestore.inventory.product.domain.model.Product();
+			product.setName("Nuevo modelo");
+			product.setDescription("Descripción persistida");
+			product.setBrand(new com.shoestore.inventory.product.domain.model.Brand(null, "Marca catálogo"));
+			product.setCategory(new com.shoestore.inventory.product.domain.model.Category(null, "Casual"));
+			product.setStatus(true);
+			product.setVariants(new java.util.ArrayList<>(List.of(new com.shoestore.inventory.product.domain.model.ProductVariant(
+					null, null, new com.shoestore.inventory.product.domain.model.Color(null, "Negro catálogo"),
+					40, new BigDecimal("45"), 3, null))));
+			var createdProduct = catalog.saveCatalog(product);
+			long catalogVariant = createdProduct.getVariants().getFirst().getId();
+			assertEquals(3, stock(jdbc, catalogVariant));
+			assertEquals("Descripción persistida", jdbc.queryForObject("select description from products where id = ?",
+					String.class, createdProduct.getId()));
+			adjustments.updateVariantStock(catalogVariant, -1);
+			createdProduct.setName("Modelo editado");
+			createdProduct.getVariants().getFirst().setCatalogPrice(new BigDecimal("55.25"));
+			createdProduct.getVariants().getFirst().setStock(999);
+			createdProduct.getVariants().add(new com.shoestore.inventory.product.domain.model.ProductVariant(
+					null, createdProduct.getId(), new com.shoestore.inventory.product.domain.model.Color(null, "Blanco catálogo"),
+					40, new BigDecimal("60"), 4, null));
+			var editedProduct = catalog.saveCatalog(createdProduct);
+			assertEquals(2, stock(jdbc, catalogVariant));
+			assertEquals(new BigDecimal("55.25"), jdbc.queryForObject(
+					"select catalog_price from product_variants where id = ?", BigDecimal.class, catalogVariant));
+			assertEquals(2, editedProduct.getVariants().size());
+			assertEquals("Modelo editado", jdbc.queryForObject("select name from products where id = ?", String.class, editedProduct.getId()));
+			var removed = editedProduct.getVariants().removeLast();
+			assertThrows(com.shoestore.inventory.product.domain.exception.InvalidCatalogException.class,
+					() -> catalog.saveCatalog(editedProduct));
+			editedProduct.getVariants().add(removed);
+			editedProduct.getVariants().getFirst().setCatalogPrice(new BigDecimal("0"));
+			assertThrows(com.shoestore.inventory.product.domain.exception.InvalidCatalogException.class,
+					() -> catalog.saveCatalog(editedProduct));
+			assertEquals(2, stock(jdbc, catalogVariant));
+			jdbc.execute("""
+					create function fixture_pause_catalog() returns trigger language plpgsql as $$
+					begin
+					  if new.name = 'Catalog race' then perform pg_advisory_xact_lock(84712); end if;
+					  return new;
+					end $$;
+					create trigger fixture_pause_catalog before update on products
+					for each row execute function fixture_pause_catalog();
+					""");
+			editedProduct.setName("Catalog race");
+			editedProduct.getVariants().getFirst().setCatalogPrice(new BigDecimal("56.25"));
+			try (var connection = DriverManager.getConnection(url, "tx01_fixture", "fixture-only");
+				 var statement = connection.createStatement();
+				 var executor = Executors.newSingleThreadExecutor()) {
+				statement.execute("select pg_advisory_lock(84712)");
+				try {
+					var editing = executor.submit(() -> catalog.saveCatalog(editedProduct));
+					boolean waiting = false;
+					for (int attempt = 0; attempt < 100 && !waiting; attempt++) {
+						waiting = jdbc.queryForObject("select exists(select 1 from pg_locks where locktype = 'advisory' and objid = 84712 and not granted)", Boolean.class);
+						if (!waiting) Thread.sleep(50);
+					}
+					assertTrue(waiting, "La edición debe pausar después de leer las variantes.");
+					adjustments.updateVariantStock(catalogVariant, -1);
+					statement.execute("select pg_advisory_unlock(84712)");
+					var result = editing.get(15, TimeUnit.SECONDS);
+					assertEquals(1, stock(jdbc, catalogVariant));
+					assertEquals(1, result.getVariants().stream().filter(v -> v.getId().equals(catalogVariant)).findFirst().orElseThrow().getStock());
+				} finally {
+					statement.execute("select pg_advisory_unlock_all()");
+				}
+			}
 		}
 	}
 

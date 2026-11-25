@@ -14,6 +14,8 @@ public interface ProductRepositoryPort {
 
 	Product save(Product product);
 
+	Product saveCatalog(Product product);
+
 	Optional<ProductVariant> findVariantById(Long variantId);
 
 	void changeVariantStock(Long variantId, long delta);

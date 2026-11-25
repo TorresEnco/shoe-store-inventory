@@ -135,6 +135,9 @@ public class ProductMapper {
 			return entityManager.getReference(CategoryJpaEntity.class, category.getId());
 		}
 		CategoryJpaEntity entity = new CategoryJpaEntity(null, category.getDescription());
+		var existing = entityManager.createQuery("select c from CategoryJpaEntity c where c.description = :name order by c.id", CategoryJpaEntity.class)
+				.setParameter("name", category.getDescription()).setMaxResults(1).getResultList();
+		if (!existing.isEmpty()) return existing.getFirst();
 		entityManager.persist(entity);
 		return entity;
 	}
@@ -147,6 +150,9 @@ public class ProductMapper {
 			return entityManager.getReference(BrandJpaEntity.class, brand.getId());
 		}
 		BrandJpaEntity entity = new BrandJpaEntity(null, brand.getName());
+		var existing = entityManager.createQuery("select b from BrandJpaEntity b where b.name = :name order by b.id", BrandJpaEntity.class)
+				.setParameter("name", brand.getName()).setMaxResults(1).getResultList();
+		if (!existing.isEmpty()) return existing.getFirst();
 		entityManager.persist(entity);
 		return entity;
 	}
@@ -160,6 +166,9 @@ public class ProductMapper {
 		}
 		String key = color.getName() == null ? "" : color.getName();
 		return resolvedColors.computeIfAbsent(key, ignored -> {
+			var existing = entityManager.createQuery("select c from ColorJpaEntity c where c.name = :name order by c.id", ColorJpaEntity.class)
+					.setParameter("name", color.getName()).setMaxResults(1).getResultList();
+			if (!existing.isEmpty()) return existing.getFirst();
 			ColorJpaEntity entity = new ColorJpaEntity(null, color.getName());
 			entityManager.persist(entity);
 			return entity;

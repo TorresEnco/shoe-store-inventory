@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class InventoryConflictAdvice {
+    @ExceptionHandler(com.shoestore.inventory.product.domain.exception.InvalidCatalogException.class)
+    ProblemDetail invalidCatalog(com.shoestore.inventory.product.domain.exception.InvalidCatalogException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
 	@ExceptionHandler(InvalidSaleException.class)
 	ProblemDetail invalidSale(InvalidSaleException exception) {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());

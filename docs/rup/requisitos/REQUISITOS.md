@@ -22,6 +22,8 @@ Recibir o ajustar stock por modelo, color y talla. Presentar los cambios y un re
 
 Registrar calzado y sus variantes por color y talla. Editar los datos de catálogo previstos, incluidos nombre, precios y colores. **Criterio:** los datos confirmados se reflejan en una consulta posterior del catálogo. [PLAN.md, alta y edición de calzado](../../../PLAN.md)
 
+El alta y la edición requieren ADMIN. Admiten nombre, descripción, marca, categoría, estado y precios positivos de hasta dos decimales, además de nuevas variantes. Las variantes registradas conservan su identificador, color y talla para preservar el historial. Sus existencias se cambian en el ajuste dedicado. Una edición conserva el stock actual aunque el formulario tenga un saldo antiguo. Los errores mantienen el formulario disponible para corregirlo.
+
 ### RF-04 Rotación de inventario
 
 Presentar al administrador un análisis ABC con el reparto de ingresos 80/15/5 indicado en el plan, velocidad en pares por día y oportunidades de liquidación según antigüedad superior a 45 días. **Criterio:** el informe identifica sus clases y períodos con reglas confirmadas y cifras coherentes con las ventas completadas. La convención para cruzar umbrales y la ventana de liquidación quedan pendientes. [PLAN.md, rotación ABC](../../../PLAN.md) · [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)

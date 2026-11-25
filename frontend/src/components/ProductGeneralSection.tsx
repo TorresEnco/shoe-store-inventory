@@ -80,6 +80,7 @@ export default function ProductGeneralSection({
             onChange={(e) => onBrandChange(e.target.value)}
             className="rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2 text-sm font-medium text-stone-900 focus:border-leather focus:bg-white focus:outline-none focus:ring-2 focus:ring-leather/20"
           >
+            {!BRANDS.includes(brand) && <option value={brand}>{brand}</option>}
             {BRANDS.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
@@ -96,6 +97,7 @@ export default function ProductGeneralSection({
             onChange={(e) => onCategoryChange(e.target.value as Category)}
             className="rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2 text-sm font-medium text-stone-900 focus:border-leather focus:bg-white focus:outline-none focus:ring-2 focus:ring-leather/20"
           >
+            {!CATEGORIES_LIST.includes(category) && <option value={category}>{category}</option>}
             {CATEGORIES_LIST.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -115,7 +117,7 @@ export default function ProductGeneralSection({
             id="model-price"
             type="number"
             min={0}
-            step="0.5"
+              step="0.01"
             value={price === 0 ? '' : price}
             onChange={(e) => onPriceChange(parseFloat(e.target.value) || 0)}
             placeholder="0.00"

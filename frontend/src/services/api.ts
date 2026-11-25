@@ -110,6 +110,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (response.status === 429 && path === '/auth/login') {
     throw new Error('Demasiados intentos de inicio de sesión. Espera unos minutos y vuelve a intentarlo.');
   }
+  if (response.status === 400 && path.endsWith('/catalog')) {
+    const problem: unknown = await response.json().catch(() => null);
+    if (problem && typeof problem === 'object' && 'detail' in problem && typeof problem.detail === 'string') {
+      throw new Error(problem.detail);
+    }
+    throw new Error('Revisa los datos del catálogo antes de guardar.');
+  }
   if (path === '/sales' && response.status === 400) {
     throw new SaleRejectedError('Revisa los datos del cobro antes de volver a intentarlo.');
   }
@@ -144,6 +151,21 @@ export function updateStock(variantId: number, delta: number): Promise<ApiVarian
 }
 
 export class SaleRejectedError extends Error {}
+
+export interface CatalogPayload {
+  name: string;
+  description: string;
+  brand: string;
+  category: string;
+  status: boolean;
+  variants: { id?: number; color: string; size: number; catalogPrice: number; stock: number }[];
+}
+
+export function saveCatalog(payload: CatalogPayload, id?: number): Promise<ApiProduct> {
+  return request<ApiProduct>(id ? `/products/${id}/catalog` : '/products/catalog', {
+    method: id ? 'PUT' : 'POST', body: JSON.stringify(payload),
+  });
+}
 
 export function processSale(saleData: ProcessSalePayload, key: string): Promise<ApiSale> {
   return request<ApiSale>('/sales', {

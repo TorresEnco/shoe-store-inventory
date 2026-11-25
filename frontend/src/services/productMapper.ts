@@ -1,8 +1,6 @@
 import type { ApiProduct, ApiVariant } from './api';
 import type { Category, ColorVariant, Shoe, SizeEntry } from '../data/mockShoes';
 
-const KNOWN_CATEGORIES: Category[] = ['Casual', 'Zapatillas', 'Formal', 'Botines'];
-
 const COLOR_SWATCHES: Record<string, string> = {
   'Marrón Caramelo': '#8B5E3C',
   'Blanco Tiza': '#E8E4DD',
@@ -15,7 +13,7 @@ const COLOR_SWATCHES: Record<string, string> = {
 };
 
 function toCategory(name: string | null): Category {
-  return name && (KNOWN_CATEGORIES as string[]).includes(name) ? (name as Category) : 'Casual';
+  return (name || 'Casual') as Category;
 }
 
 function toSizeEntry(variant: ApiVariant): SizeEntry {
@@ -48,6 +46,7 @@ export function mapProductToShoe(product: ApiProduct): Shoe {
   return {
     id: String(product.id),
     name: product.name,
+    subtitle: product.description ?? '',
     brand: product.brandName ?? '',
     color: primary.color,
     price: Number(variants[0]?.catalogPrice ?? 0),

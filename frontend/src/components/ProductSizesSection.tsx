@@ -134,6 +134,7 @@ export default function ProductSizesSection({
                 key={entry.size}
                 size={entry.size}
                 stock={entry.stock}
+                stockReadOnly={Boolean(entry.variantId)}
                 price={entry.price ?? basePrice}
                 onStockChange={(newStock) => onStockChange(entry.size, newStock)}
                 onPriceChange={(newPrice) => onPriceChange(entry.size, newPrice)}

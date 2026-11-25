@@ -62,6 +62,8 @@ public class SessionSecurity {
                 .requestMatchers(HttpMethod.PATCH, "/api/products/variants/{id}/stock").hasAnyRole("ADMIN", "CASHIER")
                 .requestMatchers(HttpMethod.GET, "/api/users", "/api/analytics/pareto").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users", "/api/products").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/products/catalog").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/{id}/catalog").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/users/{id}/toggle-status", "/api/sales/{id}/cancel").hasRole("ADMIN")
                 .anyRequest().denyAll())
             .exceptionHandling(errors -> errors

@@ -9,6 +9,7 @@ interface ProductSizeVariantCardProps {
   size: number;
   stock: number;
   price: number;
+  stockReadOnly?: boolean;
   onStockChange: (newStock: number) => void;
   onPriceChange: (newPrice: number) => void;
 }
@@ -17,6 +18,7 @@ export default function ProductSizeVariantCard({
   size,
   stock,
   price,
+  stockReadOnly,
   onStockChange,
   onPriceChange,
 }: ProductSizeVariantCardProps) {
@@ -32,7 +34,7 @@ export default function ProductSizeVariantCard({
 
       <div className="flex flex-wrap items-center gap-3">
         {/* Stock Stepper */}
-        <div className="flex items-center gap-1">
+        <fieldset disabled={stockReadOnly} className="flex items-center gap-1">
           <span className="text-[10px] font-semibold text-stone-400 mr-1">Stock:</span>
           <button
             type="button"
@@ -44,6 +46,7 @@ export default function ProductSizeVariantCard({
             -
           </button>
           <input
+            aria-label={`Stock talla ${size}`}
             type="number"
             min={0}
             value={stock}
@@ -58,7 +61,7 @@ export default function ProductSizeVariantCard({
           >
             +
           </button>
-        </div>
+        </fieldset>
 
         {/* Variant Catalog Price */}
         <div className="flex items-center gap-1.5">
@@ -68,9 +71,10 @@ export default function ProductSizeVariantCard({
               S/.
             </span>
             <input
+              aria-label={`Precio talla ${size}`}
               type="number"
               min={0}
-              step="0.5"
+              step="0.01"
               value={price}
               onChange={(e) => onPriceChange(Math.max(0, parseFloat(e.target.value) || 0))}
               className="h-8 w-20 rounded-lg border border-stone-200 bg-white py-1 pl-6 pr-2 text-right text-xs font-bold text-stone-900 focus:border-leather focus:outline-none"

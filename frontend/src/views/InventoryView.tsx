@@ -13,7 +13,8 @@ import SizeRestockRow from '../components/SizeRestockRow';
 import ReceptionSummary from '../components/ReceptionSummary';
 import ProductFormModal from '../components/ProductFormModal';
 
-import { updateStock } from '../services/api';
+import { updateStock, saveCatalog } from '../services/api';
+import { mapProductToShoe } from '../services/productMapper';
 
 interface InventoryViewProps {
   reload: () => Promise<void>;
@@ -82,8 +83,17 @@ export default function InventoryView({ shoes, onSaveStock, admin, reload }: Inv
     }
   };
 
-  const handleSaveProduct = (prod: Shoe) => {
-    const exists = shoes.some((s) => s.id === prod.id);
+  const handleSaveProduct = async (draft: Shoe) => {
+    const exists = Boolean(shoeToEdit);
+    const result = await saveCatalog({
+      name: draft.name, description: draft.subtitle ?? '', brand: draft.brand,
+      category: draft.category, status: draft.status !== 'INACTIVE',
+      variants: (draft.colors ?? []).flatMap(group => group.sizes.map(entry => ({
+        id: entry.variantId, color: group.color, size: entry.size,
+        catalogPrice: entry.price ?? draft.price, stock: entry.stock,
+      }))),
+    }, shoeToEdit ? Number(shoeToEdit.id) : undefined);
+    const prod = mapProductToShoe(result);
     onSaveStock(exists ? shoes.map((s) => (s.id === prod.id ? prod : s)) : [prod, ...shoes]);
     setSelectedShoeId(prod.id);
     setActiveColor(prod.color);
@@ -143,6 +153,7 @@ export default function InventoryView({ shoes, onSaveStock, admin, reload }: Inv
       </div>
 
       <ProductFormModal
+        key={isModalOpen ? shoeToEdit?.id ?? 'new' : 'closed'}
         isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
         shoeToEdit={shoeToEdit} onSave={handleSaveProduct}
       />

@@ -59,7 +59,9 @@ class SessionSecurityTests {
     @EnableWebSecurity
     @Import({SessionSecurity.class, AuthController.class, UserService.class, PasswordEncoderConfig.class, ProductService.class, SaleService.class,
             CustomerController.class, ProductController.class, SaleController.class, UserController.class,
-            InventoryConflictAdvice.class})
+            InventoryConflictAdvice.class,
+            com.shoestore.inventory.product.infrastructure.adapters.in.web.CatalogController.class,
+            com.shoestore.inventory.product.application.service.SaveCatalogService.class})
     static class Config {
         @Bean ProductRepositoryPort products() { return mock(ProductRepositoryPort.class); }
         @Bean CustomerRepositoryPort customers() { return mock(CustomerRepositoryPort.class); }
@@ -167,6 +169,29 @@ class SessionSecurityTests {
         assertTrue(session.isInvalid());
         mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
         assertFalse(csrf(new MockHttpSession()).isBlank());
+    }
+
+    @Test void catalogRequiresAdminAndValidVariants() throws Exception {
+        var session = login();
+        String payload = """
+                {"name":"Modelo","brand":"Marca","category":"Casual","status":true,
+                 "variants":[{"color":"Negro","size":40,"catalogPrice":45,"stock":2}]}
+                """;
+        mvc.perform(post("/api/products/catalog").session(session).header("X-CSRF-TOKEN", csrf(session))
+                .contentType("application/json").content(payload)).andExpect(status().isForbidden());
+        mvc.perform(put("/api/products/1/catalog").session(session).header("X-CSRF-TOKEN", csrf(session))
+                .contentType("application/json").content(payload)).andExpect(status().isForbidden());
+        user.setRole(Role.ADMIN);
+        user.setPassword(encoder.encode(password));
+        session = login();
+        when(products.saveCatalog(any())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(post("/api/products/catalog").session(session).header("X-CSRF-TOKEN", csrf(session))
+                .contentType("application/json").content(payload)).andExpect(status().isCreated());
+        clearInvocations(products);
+        mvc.perform(put("/api/products/1/catalog").session(session).header("X-CSRF-TOKEN", csrf(session))
+                .contentType("application/json").content(payload.replace("\"catalogPrice\":45", "\"catalogPrice\":0")))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(products);
     }
 
     @Test void rejectsZeroPricedLineBeforeWritingSale() throws Exception {
