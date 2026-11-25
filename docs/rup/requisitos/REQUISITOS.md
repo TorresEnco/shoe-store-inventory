@@ -1,0 +1,57 @@
+# Requisitos del sistema
+
+## Alcance y actores
+
+Comercial Torres necesita un POS móvil para vender calzado, gestionar existencias y mantener el catálogo, así como un informe Pareto para la rotación de inventario. Los roles previstos son `ADMIN` y `CASHIER`. El cliente puede asociarse a una venta de forma opcional. La fuente es el alcance funcional y el contrato de datos del [plan maestro](../../../PLAN.md).
+
+Los identificadores de este documento se asignan a requisitos ya descritos en el plan o a controles técnicos documentados en las reglas y la auditoría. Los criterios indican resultados esperados. El [mapa de implementación](../implementacion/IMPLEMENTACION.md) distingue lo conectado al backend de lo simulado.
+
+### RF-01 Venta en caja
+
+Cada línea identifica una variante por color y talla, conserva su precio negociado y descuenta sus existencias. Dos colores de la misma talla permanecen como líneas independientes. Los productos inactivos quedan excluidos de ventas nuevas.
+
+Registrar una venta desde el POS móvil seleccionando la variante y la cantidad. Conservar el precio negociado por línea y el medio de pago admitido, efectivo o Yape/Plin. Mostrar «Público General» cuando falta el cliente. **Criterio:** la venta guardada contiene las líneas, precios, cantidades y medio seleccionados, con el total correspondiente. [PLAN.md, operaciones y contrato de venta](../../../PLAN.md)
+
+Hasta verificar el destino de Yape/Plin y definir la confirmación de recepción, el POS solo permite cobrar en efectivo. El QR de Yape/Plin queda identificado como muestra visual. [POS-02](../../../AUDIT_REMEDIATION.md#pos-02--high--in_progress--p5b--media)
+
+### RF-02 Ajuste de existencias
+
+Recibir o ajustar stock por modelo, color y talla. Presentar los cambios y un resumen antes de confirmar. **Criterio:** los cambios confirmados quedan reflejados en el saldo de las variantes correspondientes al volver a consultar. [PLAN.md, ajuste de existencias](../../../PLAN.md)
+
+### RF-03 Alta y edición de catálogo
+
+Registrar calzado y sus variantes por color y talla. Editar los datos de catálogo previstos, incluidos nombre, precios y colores. **Criterio:** los datos confirmados se reflejan en una consulta posterior del catálogo. [PLAN.md, alta y edición de calzado](../../../PLAN.md)
+
+### RF-04 Rotación de inventario
+
+Presentar al administrador un análisis ABC con el reparto de ingresos 80/15/5 indicado en el plan, velocidad en pares por día y oportunidades de liquidación según antigüedad superior a 45 días. **Criterio:** el informe identifica sus clases y períodos con reglas confirmadas y cifras coherentes con las ventas completadas. La convención para cruzar umbrales y la ventana de liquidación quedan pendientes. [PLAN.md, rotación ABC](../../../PLAN.md) · [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)
+
+### RF-05 Acceso del personal
+
+Proporcionar acceso por usuario y contraseña y distinguir los roles de administrador y cajero. **Criterio:** las credenciales válidas de una cuenta activa permiten acceder al sistema con el rol asignado. [PLAN.md, usuarios y acceso](../../../PLAN.md)
+
+### RNF-01 Uso móvil y localización
+
+El flujo de caja se orienta a teléfono. La interfaz usa español y muestra los importes en soles (`S/.`). **Criterio:** el flujo puede recorrerse en un viewport móvil, con etiquetas, importes y errores legibles en español. [PLAN.md, idioma y POS móvil](../../../PLAN.md) · [frontend/AGENTS.md](../../../frontend/AGENTS.md)
+
+### RNF-02 Integridad de venta y stock
+
+Un reintento del mismo cobro con la misma clave y el mismo contenido conserva una sola venta y un solo descuento de stock. Reutilizar la clave con datos distintos se rechaza. El cajero puede confirmar el resultado reenviando el cobro pendiente desde la pantalla de pago.
+
+La venta procesa stock, cabecera y líneas como una unidad. El stock se mantiene no negativo, el total coincide con la suma de subtotales y un reintento del mismo cobro conserva una venta. Se permiten descuentos manuales. Cada línea de venta exige un precio unitario mayor que cero y admite hasta dos decimales. La API rechaza la venta completa si alguna línea tiene precio cero, negativo o con fracciones de céntimo. **Criterio:** la concurrencia respeta el stock disponible y los fallos y reintentos preservan esos invariantes. [PLAN.md, transacción de venta](../../../PLAN.md) · [AGENTS.md, invariantes](../../../AGENTS.md) · [AUDIT_REMEDIATION.md, TX-01, TX-02 y FIN-01](../../../AUDIT_REMEDIATION.md)
+
+### RNF-03 Autorización del servidor
+
+El servidor deriva identidad y rol de la sesión. CASHIER puede consultar productos, precios y stock, ajustar existencias, registrar clientes y consultarlos, aplicar descuentos manuales, registrar ventas y consultar solo las propias. ADMIN puede además administrar empleados y roles, consultar ventas ajenas, anular ventas y acceder a analíticas y reportes. Las ventas históricas sin empleado conservan ese estado y solo ADMIN puede consultarlas o anularlas. Toda operación sin clasificación se deniega. La propiedad se comprueba también al consultar una venta individual. [SEC-01 y DB-01](../../../AUDIT_REMEDIATION.md)
+
+El arranque de producción exige configuración externa de PostgreSQL y excluye la siembra de demostración. El aprovisionamiento inicial crea un administrador mediante una ejecución local sin servidor HTTP y se rechaza cuando ya hay un administrador activo. [SEC-02](../../../AUDIT_REMEDIATION.md)
+
+## Caso de uso principal · Registrar venta
+
+La secuencia prevista para **RF-01** es que el cajero seleccione variante y cantidad, confirme el precio negociado, identifique al cliente si corresponde y registre el medio de pago. El servidor valida los datos y las existencias, guarda la operación y devuelve el resultado. Si el stock resulta insuficiente, se rechaza la operación sin persistir una venta parcial. La autorización y la consistencia de este caso están vinculadas a RNF-03 y RNF-02. [PLAN.md, POS y contrato de venta](../../../PLAN.md) · [Diseño de venta y stock](../analisis-diseno/DISENO.md#d-02-venta-y-stock)
+
+## Pendiente de validación
+
+- Para la trazabilidad persistente de ajustes manuales, validar cómo conservar responsable, saldo anterior, saldo nuevo y motivo opcional. Cualquier ampliación de esquema requiere aprobación.
+- Queda por definir la confirmación de transferencias Yape/Plin. [POS-02](../../../AUDIT_REMEDIATION.md)
+- Confirmar cómo se asigna la clase al cruzar un umbral ABC, cómo se tratan empates y qué período de venta se usa para sugerir liquidación. [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)
