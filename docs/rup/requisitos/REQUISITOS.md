@@ -34,6 +34,8 @@ Proporcionar acceso por usuario y contraseña y distinguir los roles de administ
 
 ### RNF-01 Uso móvil y localización
 
+Las consultas de catálogo e historial muestran únicamente el resultado de la solicitud vigente. Una respuesta antigua conserva su carácter obsoleto tras una escritura confirmada. El cliente distingue demora, pérdida de conexión y respuesta inválida. Un cobro de resultado desconocido conserva su clave y carrito para consultar el resultado mediante el mismo reintento.
+
 El flujo de caja se orienta a teléfono. La interfaz usa español y muestra los importes en soles (`S/.`). **Criterio:** el flujo puede recorrerse en un viewport móvil, con etiquetas, importes y errores legibles en español. [PLAN.md, idioma y POS móvil](../../../PLAN.md) · [frontend/AGENTS.md](../../../frontend/AGENTS.md)
 
 ### RNF-02 Integridad de venta y stock

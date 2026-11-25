@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Header from './components/Header';
+import CatalogContent from './components/CatalogContent';
 import BottomNavBar from './components/BottomNavBar';
 import SalesHistoryModal from './components/SalesHistoryModal';
 import PosView from './views/PosView';
@@ -23,27 +24,35 @@ export default function AuthenticatedPos({ currentUser, onLogout }: { currentUse
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const requestVersions = useRef({ products: 0, history: 0 });
 
   const loadProducts = useCallback(async () => {
+    const requestId = ++requestVersions.current.products;
     try {
       const products = await getProducts();
+      if (requestId !== requestVersions.current.products) return;
       setLoadError(null);
       setShoes(products.map(mapProductToShoe));
     } catch (cause) {
+      if (requestId !== requestVersions.current.products) return;
       setLoadError(cause instanceof Error ? cause.message : 'No se pudo cargar el catálogo.');
     } finally {
-      setIsLoading(false);
+      if (requestId === requestVersions.current.products) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const versions = requestVersions.current;
     void loadProducts();
+    return () => { versions.products++; versions.history++; };
   }, [loadProducts]);
 
   async function openHistory() {
+    const requestId = ++requestVersions.current.history;
     setHistoryMessage('Cargando ventas…');
     try {
       const records = await getTodaySales();
+      if (requestId !== requestVersions.current.history) return;
       setSales(records.map(sale => ({
         id: String(sale.id), time: sale.createdAt.slice(11, 16), date: sale.createdAt.slice(0, 10),
         cashierName: sale.userId === currentUser.id ? currentUser.fullName : (sale.userId ? 'Empleado ' + sale.userId : 'Sin asignar'),
@@ -53,11 +62,13 @@ export default function AuthenticatedPos({ currentUser, onLogout }: { currentUse
       setHistoryMessage('');
       setIsSalesHistoryOpen(true);
     } catch (cause) {
+      if (requestId !== requestVersions.current.history) return;
       setHistoryMessage(cause instanceof Error ? cause.message : 'No se pudo consultar el historial.');
     }
   }
 
   async function handleVoidSale(saleId: string) {
+    requestVersions.current.history++;
     setIsSalesHistoryOpen(false);
     try {
       await cancelSale(Number(saleId));
@@ -82,7 +93,12 @@ export default function AuthenticatedPos({ currentUser, onLogout }: { currentUse
         return (
           <InventoryView admin={currentUser.role === 'ADMIN'}
             shoes={shoes}
-            onSaveStock={setShoes}
+            onSaveStock={updated => {
+              requestVersions.current.products++;
+              setIsLoading(false);
+              setLoadError(null);
+              setShoes(updated);
+            }}
             reload={loadProducts}
           />
         );
@@ -105,43 +121,10 @@ export default function AuthenticatedPos({ currentUser, onLogout }: { currentUse
 
       {historyMessage && <p role="status" className="px-4 py-2 text-sm">{historyMessage}</p>}
       <div className="flex flex-1 flex-col overflow-y-auto">
-        {loadError && shoes.length > 0 && (
-          <div className="mx-4 mt-3 flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-            <span>{loadError}</span>
-            <button
-              type="button"
-              onClick={() => { setIsLoading(true); void loadProducts(); }}
-              className="rounded-full bg-amber-200 px-3 py-1 text-[10px] font-bold text-amber-900"
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {isLoading && shoes.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <span
-              className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-leather"
-              aria-hidden="true"
-            />
-            <p className="text-sm font-semibold text-stone-500">Cargando catálogo...</p>
-          </div>
-        ) : !isLoading && loadError && shoes.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <span className="text-4xl">📡</span>
-            <p className="text-sm font-bold text-stone-700">No se pudo cargar el catálogo</p>
-            <p className="max-w-xs text-xs text-stone-500">{loadError}</p>
-            <button
-              type="button"
-              onClick={() => { setIsLoading(true); void loadProducts(); }}
-              className="rounded-full bg-leather px-5 py-2 text-xs font-bold text-white hover:bg-leather-dark"
-            >
-              Reintentar
-            </button>
-          </div>
-        ) : (
-          renderTab()
-        )}
+        <CatalogContent hasProducts={shoes.length > 0} isLoading={isLoading} loadError={loadError}
+          onRetry={() => { setIsLoading(true); void loadProducts(); }}>
+          {renderTab()}
+        </CatalogContent>
       </div>
 
       {/* Bottom navigation is hidden whenever checkout modal is open */}

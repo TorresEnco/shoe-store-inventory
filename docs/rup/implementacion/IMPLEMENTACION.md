@@ -10,6 +10,8 @@ El código es la fuente del comportamiento implementado. El [README raíz](../..
 
 ## Matriz de trazabilidad
 
+**RNF-01 y RNF-02 / D-03 / PV-05 y PV-06 / POS-04.** El cliente clasifica fallos de transporte. La raíz descarta respuestas antiguas y la caja conserva el intento de resultado desconocido. Se extrajo la presentación de carga y error del catálogo para mantener acotado el componente raíz. [HTTP](../../../frontend/src/services/api.ts) · [Raíz autenticada](../../../frontend/src/AuthenticatedPos.tsx) · [Carga y errores](../../../frontend/src/components/CatalogContent.tsx) · [Pruebas](../pruebas/PRUEBAS.md#pos-04--comunicación-y-lecturas-vigentes)
+
 **RF-03 / D-06 / PV-02 / POS-01.** El formulario espera la escritura confirmada. El caso de uso valida el catálogo y el adaptador edita metadatos y precios conservando las existencias actuales. [Formulario](../../../frontend/src/components/ProductFormModal.tsx) · [Caso de uso](../../../backend/src/main/java/com/shoestore/inventory/product/application/service/SaveCatalogService.java) · [Persistencia](../../../backend/src/main/java/com/shoestore/inventory/product/infrastructure/adapters/out/persistence/ProductPersistenceAdapter.java) · [Pruebas](../pruebas/PRUEBAS.md#pos-01--persistencia-del-catálogo)
 
 **RF-01 / D-02 / PV-01 / POS-03.** El selector entrega la variante y su color. El carrito y la eliminación de líneas usan `variantId`. El caso de uso valida el estado del producto antes de escribir. [POS](../../../frontend/src/views/PosView.tsx) · [Selector](../../../frontend/src/components/ShoeCard.tsx) · [Servicio](../../../backend/src/main/java/com/shoestore/inventory/sale/application/service/SaleService.java) · [Pruebas](../pruebas/PRUEBAS.md#pos-03--variantes-en-caja)

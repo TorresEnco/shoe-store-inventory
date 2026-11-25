@@ -92,6 +92,12 @@ Maven offline ejecutó diez pruebas dirigidas en PostgreSQL desechable y MockMvc
 - La API sintética recibió `CASH` y la variante, cantidad y precio esperados. Tras un `400`, el cobro conservó el carrito y el siguiente intento generó una clave nueva. Ante una respuesta truncada, el reintento manual reaprovechó la clave y el contenido y mostró la confirmación tras recibir `201`.
 - Pasaron `npm run build` y ESLint sobre los dos componentes modificados. `npm run lint` reportó los seis errores de la línea base. Queda pendiente verificar el QR y la recepción de pagos con el destino real del comercio.
 
+### POS-04 · Comunicación y lecturas vigentes
+
+- `node --test tests/api.test.cjs`, desde `frontend/`, pasó cinco pruebas sin dependencias nuevas. Cubren mismo origen, credenciales y presupuesto de 15 segundos, conexión perdida, JSON o estructura inválida, timeout durante la lectura del cuerpo y separación entre rechazo de venta y resultado desconocido. [Pruebas de cliente](../../../frontend/tests/api.test.cjs)
+- Edge headless a 390 × 844 con API sintética comprobó selección de variantes, rechazo de cobro, respuesta truncada y reintento con la misma clave y cuerpo. Tras una recarga fallida, dos reintentos concurrentes devolvieron el resultado reciente antes del antiguo. Se conservó el catálogo reciente. Dos consultas de historial comprobaron que un error antiguo no sustituye el resultado actual.
+- Pasó `npm run build`. Lint conserva cinco errores previos. La revisión dirigida mantiene el error preexistente de `react-hooks/set-state-in-effect` en la raíz autenticada. El navegador utilizó la ampliación y el viewport estrecho del recorrido previo de caja. La comprobación del proxy y el teléfono de destino conserva su seguimiento en SEC-01.
+
 ### POS-01 · Persistencia del catálogo
 
 - Backend offline ejecutó 13 pruebas dirigidas de variantes, seguridad y límite de login. Se verificó `403` para CASHIER en alta y edición, `201` para ADMIN y `400` para precio cero sin invocar persistencia. El fixture renueva su contraseña antes del segundo login, ya que el servicio la retira del objeto autenticado.

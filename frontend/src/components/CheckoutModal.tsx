@@ -7,7 +7,7 @@
 
 import { useRef, useState } from 'react';
 import type { CartItem } from '../types/cart';
-import { processSale, SaleRejectedError } from '../services/api';
+import { processSale, SaleRejectedError, ApiTransportError } from '../services/api';
 import CheckoutYapeSection from './CheckoutYapeSection';
 import CheckoutItemList from './CheckoutItemList';
 import CheckoutTotals from './CheckoutTotals';
@@ -68,7 +68,8 @@ export default function CheckoutModal({
         setHasPendingSale(false);
         setErrorMessage(cause.message);
       } else {
-        setErrorMessage('El resultado del cobro está pendiente. Reintenta este mismo cobro para confirmarlo.');
+        const detail = cause instanceof ApiTransportError ? `${cause.message} ` : '';
+        setErrorMessage(detail + 'El resultado del cobro está pendiente. Reintenta este mismo cobro para confirmarlo.');
       }
     } finally {
       submitting.current = false;

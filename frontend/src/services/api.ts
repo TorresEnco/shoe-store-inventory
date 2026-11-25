@@ -86,6 +86,25 @@ export interface ParetoReport {
 type Csrf = { headerName: string; token: string };
 let sessionToken: Csrf | undefined;
 
+export class ApiTransportError extends Error {
+  readonly kind: 'timeout' | 'connection' | 'response';
+
+  constructor(kind: 'timeout' | 'connection' | 'response', message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+function transportError(cause: unknown): ApiTransportError {
+  if (cause instanceof DOMException && cause.name === 'TimeoutError') {
+    return new ApiTransportError('timeout', 'El servidor tardó demasiado en responder. Comprueba el resultado antes de reintentar.');
+  }
+  if (cause instanceof SyntaxError) {
+    return new ApiTransportError('response', 'La respuesta del servidor está incompleta o tiene un formato inválido. Comprueba el resultado antes de reintentar.');
+  }
+  return new ApiTransportError('connection', 'Se perdió la conexión con el servidor. Comprueba la conexión y el resultado antes de reintentar.');
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (init?.body) headers.set('Content-Type', 'application/json');
@@ -94,19 +113,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set(csrf.headerName, csrf.token);
   }
   let response: Response;
+  const timeout = AbortSignal.timeout(15000);
   try {
     response = await fetch(API_BASE_URL + path, {
-      ...init, credentials: 'same-origin', headers, cache: 'no-store', signal: AbortSignal.timeout(15000),
+      ...init, credentials: 'same-origin', headers, cache: 'no-store', signal: timeout,
     });
-  } catch {
-    throw new Error('Sin respuesta del servidor. Comprueba la conexión y el resultado antes de reintentar.');
+  } catch (cause) {
+    throw transportError(timeout.aborted ? timeout.reason : cause);
   }
   if (response.status === 401) {
     sessionToken = undefined;
     if (path !== '/auth/login') window.dispatchEvent(new Event('session-expired'));
     throw new Error(path === '/auth/login' ? 'Usuario o contraseña incorrectos.' : 'Tu sesión ha caducado.');
   }
-  if (response.status === 403) throw new Error('Acceso denegado. Comprueba tus permisos o recarga la página para renovar la sesión.');
+  if (response.status === 403) {
+    const message = 'Acceso denegado. Comprueba tus permisos o recarga la página para renovar la sesión.';
+    if (path === '/sales') throw new SaleRejectedError(message);
+    throw new Error(message);
+  }
   if (response.status === 429 && path === '/auth/login') {
     throw new Error('Demasiados intentos de inicio de sesión. Espera unos minutos y vuelve a intentarlo.');
   }
@@ -136,11 +160,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch (cause) {
+    throw transportError(timeout.aborted ? timeout.reason : cause);
+  }
 }
 
-export function getProducts(): Promise<ApiProduct[]> {
-  return request<ApiProduct[]>('/products');
+export async function getProducts(): Promise<ApiProduct[]> {
+  const products = await request<ApiProduct[]>('/products');
+  if (!Array.isArray(products) || products.some(product => !product || typeof product.name !== 'string'
+    || !Array.isArray(product.variants) || product.variants.some(variant => !variant))) {
+    throw new ApiTransportError('response', 'El catálogo recibido tiene un formato inválido. Vuelve a cargarlo.');
+  }
+  return products;
 }
 
 export function updateStock(variantId: number, delta: number): Promise<ApiVariant> {
@@ -175,8 +208,13 @@ export function processSale(saleData: ProcessSalePayload, key: string): Promise<
   });
 }
 
-export function getTodaySales(): Promise<ApiSale[]> {
-  return request<ApiSale[]>('/sales/today');
+export async function getTodaySales(): Promise<ApiSale[]> {
+  const sales = await request<ApiSale[]>('/sales/today');
+  if (!Array.isArray(sales) || sales.some(sale => !sale || typeof sale.createdAt !== 'string'
+    || !Array.isArray(sale.items) || sale.items.some(item => !item))) {
+    throw new ApiTransportError('response', 'El historial recibido tiene un formato inválido. Vuelve a cargarlo.');
+  }
+  return sales;
 }
 
 export function cancelSale(saleId: number): Promise<ApiSale> {

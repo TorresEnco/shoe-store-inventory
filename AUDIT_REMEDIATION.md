@@ -100,7 +100,9 @@ Valoración cualitativa **3/10**. El árbol local confirma `SEC-01`, `TX-01` y l
 - **Corrección y dependencias.** Seleccionar por `variantId`, precargar su precio y aplicar estado activo en UI y caso de uso. Depende de contratos de catálogo y venta de P2/P4.
 - **Prueba y aceptación.** Misma talla con dos colores y precios distintos conserva dos variantes correctas. El producto inactivo queda fuera de operaciones de caja.
 
-### POS-04 · MEDIUM · TODO · P6 · Media
+### POS-04 · MEDIUM · VERIFIED · P6 · Media
+
+- **Resultado local.** La API usa rutas relativas, credenciales del mismo origen y timeout de 15 segundos, incluida la lectura del cuerpo. El cliente distingue timeout, pérdida de conexión y respuesta inválida. Solo la lectura vigente puede actualizar catálogo e historial. Una escritura de catálogo confirmada invalida lecturas pendientes. La caja conserva clave y carrito ante resultado desconocido y libera el intento ante rechazo confirmado, incluido `403`. Pasaron pruebas de cliente y el recorrido móvil con API sintética, carreras de lectura y reintento tras truncarse la respuesta. [Evidencia](docs/rup/pruebas/PRUEBAS.md#pos-04--comunicación-y-lecturas-vigentes)
 
 - **Evidencia, causa e impacto.** La URL apunta al loopback del dispositivo. CORS solo contempla desarrollo, las solicitudes carecen de timeout y las lecturas pueden publicarse fuera de orden. El checkout comunica igual un conflicto y una caída de red. [api.ts:1](frontend/src/services/api.ts#L1) · [api.ts:85](frontend/src/services/api.ts#L85) · [WebCorsConfig.java:11](backend/src/main/java/com/shoestore/inventory/shared/config/WebCorsConfig.java#L11) · [App.tsx:43](frontend/src/App.tsx#L43) · [CheckoutModal.tsx:60](frontend/src/components/CheckoutModal.tsx#L60)
 - **Corrección y dependencias.** Usar mismo origen o configurar base y orígenes por entorno. Descartar lecturas obsoletas y clasificar fallos de transporte, negocio y renderizado. Alinear con P1 y la idempotencia de P3.
