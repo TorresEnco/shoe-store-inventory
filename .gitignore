@@ -1,0 +1,14 @@
+# Backend / Java / Maven
+.idea/
+backend/target/
+backend/.idea/
+backend/*.iml
+
+# Frontend / React / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
