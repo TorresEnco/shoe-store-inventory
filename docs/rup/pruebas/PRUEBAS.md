@@ -92,6 +92,13 @@ Maven offline ejecutó diez pruebas dirigidas en PostgreSQL desechable y MockMvc
 - La API sintética recibió `CASH` y la variante, cantidad y precio esperados. Tras un `400`, el cobro conservó el carrito y el siguiente intento generó una clave nueva. Ante una respuesta truncada, el reintento manual reaprovechó la clave y el contenido y mostró la confirmación tras recibir `201`.
 - Pasaron `npm run build` y ESLint sobre los dos componentes modificados. `npm run lint` reportó los seis errores de la línea base. Queda pendiente verificar el QR y la recepción de pagos con el destino real del comercio.
 
+### UX-01 · Foco y diálogos
+
+- Edge headless con API sintética a 390 × 844 comprobó los cuatro diálogos. Se recorrieron Tab y Mayús+Tab, incluidos los extremos de la lista de controles, y se intentó enfocar el perfil del fondo. El foco permaneció dentro del diálogo. Escape devolvió el foco al disparador de talla, al botón COBRAR, al historial y al alta de calzado. El documento declaró `es-PE` y el árbol de accesibilidad expuso el nombre de cobro con rol de diálogo.
+- La prueba detectó que las sugerencias de color se desmontaban al perder foco el campo, dejando sin foco el botón de sugerencia. Tras trasladar el control de salida de foco a la sección completa, pasó el recorrido con teclado.
+- Escape durante una solicitud de cobro demorada conservó el diálogo. También pasaron rechazo de venta, truncamiento de respuesta y reintento con la misma clave y contenido. Se revisó la captura del cobro con dos variantes. El panel de QR de muestra siguió accesible con teclado.
+- Pasaron `npm run build`, las cinco pruebas `node --test tests/api.test.cjs` y ESLint dirigido de los componentes modificados salvo el error preexistente de inicialización del drawer. Lint general conserva cinco errores previos. Pendientes la revisión con lector de pantalla y la validación en teléfono físico.
+
 ### POS-04 · Comunicación y lecturas vigentes
 
 - `node --test tests/api.test.cjs`, desde `frontend/`, pasó cinco pruebas sin dependencias nuevas. Cubren mismo origen, credenciales y presupuesto de 15 segundos, conexión perdida, JSON o estructura inválida, timeout durante la lectura del cuerpo y separación entre rechazo de venta y resultado desconocido. [Pruebas de cliente](../../../frontend/tests/api.test.cjs)

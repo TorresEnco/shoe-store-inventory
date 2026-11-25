@@ -108,7 +108,9 @@ Valoración cualitativa **3/10**. El árbol local confirma `SEC-01`, `TX-01` y l
 - **Corrección y dependencias.** Usar mismo origen o configurar base y orígenes por entorno. Descartar lecturas obsoletas y clasificar fallos de transporte, negocio y renderizado. Alinear con P1 y la idempotencia de P3.
 - **Prueba y aceptación.** Desde un origen de prueba móvil funcionan las lecturas. Un conflicto conserva el carrito y muestra un error accionable. Las lecturas obsoletas y el timeout tienen estados distintos.
 
-### UX-01 · MEDIUM · TODO · P6 · Baja
+### UX-01 · MEDIUM · FIXED · P6 · Baja
+
+- **Resultado local.** Cantidad, cobro, catálogo e historial usan el diálogo nativo compartido, con nombre accesible, foco inicial contenido, recorrido circular con Tab y devolución al disparador. Escape y el fondo cierran cuando la operación permite salir. El cobro pendiente y el guardado de catálogo bloquean ese cierre. La página declara `es-PE` y el error de precio se anuncia con `role=alert`. Se corrigió la pérdida de foco en las sugerencias de color. Pasaron el recorrido de teclado y la inspección del árbol de accesibilidad en Edge. Quedan pendientes lector de pantalla y teléfono físico. [Evidencia](docs/rup/pruebas/PRUEBAS.md#ux-01--foco-y-diálogos)
 
 - **Evidencia, causa e impacto.** El checkout usa un contenedor sin semántica modal y el drawer no administra foco. El fondo queda alcanzable con teclado y la página declara idioma inglés para la interfaz en español. [CheckoutModal.tsx:75](frontend/src/components/CheckoutModal.tsx#L75) · [QuantityDrawer.tsx:179](frontend/src/components/QuantityDrawer.tsx#L179) · [index.html:2](frontend/index.html#L2)
 - **Corrección y dependencias.** Gestionar nombre, foco inicial, restauración, teclado y anuncios de error, y declarar `es-PE`. Coordinar con el estado de envío de P3.

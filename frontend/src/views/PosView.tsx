@@ -160,7 +160,7 @@ export default function PosView({
       </div>
 
       <QuantityDrawer variant={drawerVariant} onConfirm={handleConfirm} onCancel={() => setDrawerVariant(null)} />
-      {!isCheckoutOpen && <FloatingOrderBar cart={cartArray} onOpenCheckout={() => setCheckoutOpen(true)} />}
+      <FloatingOrderBar cart={cartArray} onOpenCheckout={() => setCheckoutOpen(true)} />
       <CheckoutModal
         isOpen={isCheckoutOpen}
         cart={cartArray}

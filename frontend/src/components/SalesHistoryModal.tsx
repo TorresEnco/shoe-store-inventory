@@ -1,3 +1,4 @@
+import SheetDialog from './SheetDialog';
 import type { SaleRecord } from '../types/sale';
 import SaleHistoryCard from './SaleHistoryCard';
 
@@ -30,7 +31,7 @@ export default function SalesHistoryModal({ isOpen, sales, onClose, onVoidSale }
   };
 
   return (
-    <div className="z-50 fixed inset-0 bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+    <SheetDialog label="Historial de ventas y caja" onClose={onClose} locked={false}>
       <div className="max-w-md mx-auto w-full h-[92vh] bg-cream rounded-t-3xl flex flex-col overflow-hidden shadow-2xl">
         <header className="flex-shrink-0 bg-cream/95 px-5 py-3.5 flex items-start justify-between border-b border-stone-200">
           <div>
@@ -74,6 +75,6 @@ export default function SalesHistoryModal({ isOpen, sales, onClose, onVoidSale }
           )}
         </div>
       </div>
-    </div>
+    </SheetDialog>
   );
 }

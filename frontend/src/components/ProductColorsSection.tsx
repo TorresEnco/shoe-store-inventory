@@ -49,7 +49,9 @@ export default function ProductColorsSection({ colors, onAddColor, onRemoveColor
     : [];
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-xs">
+    <div onBlur={event => {
+      if (!event.currentTarget.contains(event.relatedTarget)) setIsInputFocused(false);
+    }} className="flex flex-col gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-xs">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-leather">
           2. Colores del Modelo
@@ -93,7 +95,6 @@ export default function ProductColorsSection({ colors, onAddColor, onRemoveColor
               if (duplicateError) setDuplicateError(null);
             }}
             onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();

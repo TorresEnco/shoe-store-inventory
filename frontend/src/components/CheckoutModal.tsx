@@ -1,3 +1,4 @@
+import SheetDialog from './SheetDialog';
 /**
  * CheckoutModal.tsx
  *
@@ -85,7 +86,7 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="z-50 fixed inset-0 bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+    <SheetDialog label="Cobro y pago" onClose={onClose} locked={hasPendingSale}>
       <div className="max-w-md mx-auto w-full h-[92vh] bg-cream rounded-t-3xl flex flex-col overflow-hidden shadow-2xl">
         {/* TOP: Fixed header */}
         <header className="flex-shrink-0 bg-cream/95 px-5 py-3.5 flex items-center justify-between border-b border-stone-200">
@@ -193,6 +194,6 @@ export default function CheckoutModal({
           </p>
         </footer>
       </div>
-    </div>
+    </SheetDialog>
   );
 }

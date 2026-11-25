@@ -1,3 +1,4 @@
+import SheetDialog from './SheetDialog';
 /**
  * QuantityDrawer.tsx
  *
@@ -111,19 +112,7 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
     }
   }, [variant]);
 
-  if (!variant) {
-    // Render the closed sheet (invisible) so the slide-out animation works.
-    return (
-      <>
-        <div aria-hidden="true"
-          className="fixed inset-0 z-[60] bg-black/40 opacity-0 pointer-events-none transition-opacity duration-300" />
-        <div role="dialog" aria-modal="true" aria-hidden="true"
-          className="fixed bottom-0 left-0 right-0 z-[70] max-w-md mx-auto rounded-t-3xl bg-white px-5 pt-4 pb-8 shadow-2xl translate-y-full transition-transform duration-300 ease-out">
-          <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-stone-200" />
-        </div>
-      </>
-    );
-  }
+  if (!variant) return null;
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const enteredPrice = parsePrice(unitPriceStr);
@@ -165,19 +154,9 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
   };
 
   return (
-    <>
-      {/* ── Backdrop ────────────────────────────────────────────────────────── */}
-      <div
-        aria-hidden="true"
-        onClick={onCancel}
-        className="fixed inset-0 z-[60] bg-black/40 opacity-100 transition-opacity duration-300"
-      />
-
+    <SheetDialog label={`Agregar ${variant.name} talla ${variant.size}`} onClose={onCancel}>
       {/* ── Sheet ───────────────────────────────────────────────────────────── */}
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Agregar ${variant.name} talla ${variant.size}`}
         className={[
           'fixed bottom-0 left-0 right-0 z-[70] max-w-md mx-auto',
           'rounded-t-3xl bg-white px-5 pt-4 pb-8 shadow-2xl',
@@ -298,7 +277,7 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
             />
           </div>
           {enteredPrice === null && (
-            <p id="drawer-price-error" className="mt-1.5 text-xs font-semibold text-rose-700">
+            <p id="drawer-price-error" role="alert" className="mt-1.5 text-xs font-semibold text-rose-700">
               Introduce un precio mayor a cero y con hasta dos decimales.
             </p>
           )}
@@ -356,6 +335,6 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
           </button>
         </div>
       </div>
-    </>
+    </SheetDialog>
   );
 }

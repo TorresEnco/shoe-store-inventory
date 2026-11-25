@@ -1,3 +1,4 @@
+import SheetDialog from './SheetDialog';
 /**
  * ProductFormModal.tsx
  *
@@ -6,7 +7,6 @@
  */
 
 import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { Shoe, Category, SizeEntry, ColorVariant } from '../data/mockShoes';
 import ProductGeneralSection from './ProductGeneralSection';
 import ProductColorsSection from './ProductColorsSection';
@@ -98,8 +98,8 @@ export default function ProductFormModal({ isOpen, onClose, shoeToEdit, onSave }
     } finally { submitting.current = false; setSaving(false); }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end items-center">
+  return (
+    <SheetDialog label={isEditMode ? 'Editar calzado' : 'Nuevo calzado'} onClose={onClose} locked={saving}>
       <div
         className="w-full max-w-md h-[88vh] max-h-[88vh] bg-cream rounded-t-3xl flex flex-col overflow-hidden shadow-2xl relative"
         style={{ height: '88dvh', maxHeight: '88dvh' }}
@@ -139,7 +139,6 @@ export default function ProductFormModal({ isOpen, onClose, shoeToEdit, onSave }
           </div>
         </form>
       </div>
-    </div>,
-    document.body,
+    </SheetDialog>
   );
 }
