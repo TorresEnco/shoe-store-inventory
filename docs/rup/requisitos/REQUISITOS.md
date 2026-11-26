@@ -26,7 +26,7 @@ El alta y la edición requieren ADMIN. Admiten nombre, descripción, marca, cate
 
 ### RF-04 Rotación de inventario
 
-Presentar al administrador un análisis ABC con el reparto de ingresos 80/15/5 indicado en el plan, velocidad en pares por día y oportunidades de liquidación según antigüedad superior a 45 días. **Criterio:** el informe identifica sus clases y períodos con reglas confirmadas y cifras coherentes con las ventas completadas. La convención para cruzar umbrales y la ventana de liquidación quedan pendientes. [PLAN.md, rotación ABC](../../../PLAN.md) · [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)
+Presentar al administrador un análisis ABC por modelo y color con reparto de ingresos 80/15/5, velocidad en pares por día y datos de ventas completadas. El grupo que alcanza o supera el 80 % completa A; el que alcanza o supera el 95 % completa B. Se clasifica con el acumulado previo, sin redondear los umbrales. Los empates se ordenan por identificador de producto y color (sin color primero); los ingresos cero corresponden a C. El período admite entre 1 y 365 días y la interfaz ofrece 7, 30 y 90 días. **Criterio:** un único grupo con todos los ingresos es A y los totales excluyen ventas anuladas. Riesgo y liquidación suman las existencias positivas de variantes con más de 45 días de antigüedad y ninguna venta completada en los últimos 45 días, independientemente del período del ABC. Los límites de consulta son inicio incluido y fin excluido. La pantalla presenta carga, vacío, error y reintento, descarta respuestas obsoletas y permite consultar liquidación aunque no haya ventas en el período. [PLAN.md, rotación ABC](../../../PLAN.md) · [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)
 
 ### RF-05 Acceso del personal
 
@@ -60,4 +60,4 @@ La secuencia prevista para **RF-01** es que el cajero seleccione variante y cant
 
 - Para la trazabilidad persistente de ajustes manuales, validar cómo conservar responsable, saldo anterior, saldo nuevo y motivo opcional. Cualquier ampliación de esquema requiere aprobación.
 - Queda por definir la confirmación de transferencias Yape/Plin. [POS-02](../../../AUDIT_REMEDIATION.md)
-- Confirmar cómo se asigna la clase al cruzar un umbral ABC, cómo se tratan empates y qué período de venta se usa para sugerir liquidación. [AUDIT_REMEDIATION.md, ANA-01 y ANA-02](../../../AUDIT_REMEDIATION.md)
+Las reglas de ABC y liquidación de RF-04 fueron confirmadas el 26 de noviembre de 2026.

@@ -61,6 +61,7 @@ export interface ApiSale {
 
 export interface ParetoModelMetric {
   productId: number;
+  colorId: number | null;
   productName: string;
   brandName: string | null;
   colorName: string | null;
@@ -223,8 +224,25 @@ export function cancelSale(saleId: number): Promise<ApiSale> {
   });
 }
 
-export function getParetoReport(days: number): Promise<ParetoReport> {
-  return request<ParetoReport>(`/analytics/pareto?days=${days}`);
+export async function getParetoReport(days: number): Promise<ParetoReport> {
+  const report = await request<ParetoReport>(`/analytics/pareto?days=${days}`);
+  const count = (value: unknown) => Number.isSafeInteger(value) && Number(value) >= 0;
+  const amount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  if (!report || report.periodDays !== days || !count(report.totalSold) || !amount(report.totalRevenue)
+    || !count(report.atRiskPairs) || !amount(report.classAPercentage) || report.classAPercentage > 100
+    || !Array.isArray(report.liquidationSuggestions) || report.liquidationSuggestions.some(text => typeof text !== 'string')
+    || !Array.isArray(report.models) || report.models.some(model => !model
+      || !count(model.productId) || model.productId === 0 || !(model.colorId === null || count(model.colorId) && model.colorId > 0)
+      || typeof model.productName !== 'string' || !(model.brandName === null || typeof model.brandName === 'string')
+      || !(model.colorName === null || typeof model.colorName === 'string')
+      || !count(model.totalSold) || !amount(model.revenue) || !amount(model.velocityPerDay) || !count(model.currentStock)
+      || !['CLASS_A', 'CLASS_B', 'CLASS_C'].includes(model.classification)
+      || !['Stock crítico', 'Reponer pronto', 'Rotación saludable'].includes(model.stockStatus)
+      || !model.sizeBreakdown || typeof model.sizeBreakdown !== 'object' || Array.isArray(model.sizeBreakdown)
+      || Object.entries(model.sizeBreakdown).some(([size, stock]) => !/^\d+$/.test(size) || Number(size) <= 0 || !count(stock)))) {
+    throw new ApiTransportError('response', 'El informe recibido tiene un formato inválido. Vuelve a cargarlo.');
+  }
+  return report;
 }
 
 export async function currentSession() {

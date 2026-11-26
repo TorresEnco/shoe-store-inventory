@@ -86,7 +86,7 @@ Valoración cualitativa **3/10**. El árbol local confirma `SEC-01`, `TX-01` y l
 
 ### POS-01 · HIGH · IN_PROGRESS · P6 · Alta
 
-- **Avance de catálogo.** El alta y la edición usan la API y muestran la respuesta persistida. ADMIN puede cambiar datos, estado y precios, y añadir colores y tallas. Las variantes existentes conservan su identidad y el stock se modifica mediante el ajuste dedicado. Pasaron permisos y validación HTTP, persistencia en PostgreSQL aislado y recorrido de interfaz con API sintética. Las métricas continúan pendientes de P7a. [Evidencia de catálogo](docs/rup/pruebas/PRUEBAS.md#pos-01--persistencia-del-catálogo)
+- **Avance de catálogo.** El alta y la edición usan la API y muestran la respuesta persistida. ADMIN puede cambiar datos, estado y precios, y añadir colores y tallas. Las variantes existentes conservan su identidad y el stock se modifica mediante el ajuste dedicado. Pasaron permisos y validación HTTP, persistencia en PostgreSQL aislado y recorrido de interfaz con API sintética. Las métricas ya consultan la API tras corregir ANA-01 y ANA-02; su evidencia se enlaza en el registro de analítica. [Evidencia de catálogo](docs/rup/pruebas/PRUEBAS.md#pos-01--persistencia-del-catálogo)
 
 - **Evidencia, causa e impacto.** La venta y el catálogo usan API, pero ajustes, altas, historial, anulación y métricas se simulan. La UI confirma escrituras locales que se pierden al recargar. El ajuste también impide guardar cambios por talla con saldo neto cero. [App.tsx:38](frontend/src/App.tsx#L38) · [App.tsx:60](frontend/src/App.tsx#L60) · [InventoryView.tsx:46](frontend/src/views/InventoryView.tsx#L46) · [ReceptionSummary.tsx:70](frontend/src/components/ReceptionSummary.tsx#L70) · [MetricsView.tsx:17](frontend/src/views/MetricsView.tsx#L17)
 - **Corrección y dependencias.** Conectar capacidades persistentes por flujo, usar `changedCount` y mantener deshabilitadas o identificadas las acciones de demostración. Edición completa requiere contrato propio. Depende de P1–P4 y de `ANA-01` y `ANA-02` para habilitar Pareto.
@@ -116,13 +116,17 @@ Valoración cualitativa **3/10**. El árbol local confirma `SEC-01`, `TX-01` y l
 - **Corrección y dependencias.** Gestionar nombre, foco inicial, restauración, teclado y anuncios de error, y declarar `es-PE`. Coordinar con el estado de envío de P3.
 - **Prueba y aceptación.** Recorrido de cobro en viewport móvil con teclado y lector, foco contenido y devuelto al disparador.
 
-### ANA-01 · MEDIUM · TODO · P7a · Baja
+### ANA-01 · MEDIUM · VERIFIED · P7a · Baja
+
+- **Resultado del 26 de noviembre de 2026.** El grupo que cruza un umbral completa su clase. Comparación decimal exacta, desempate estable por producto y color, grupo único en A e ingresos cero en C. Pasaron nueve pruebas de reglas, consulta de ventas completadas en PostgreSQL y visualización del informe persistido con React. [Evidencia](docs/rup/pruebas/PRUEBAS.md#ana-01-y-ana-02--analítica-real)
 
 - **Evidencia, causa e impacto.** La clasificación usa acumulado posterior a sumar el grupo. Un grupo con todo el ingreso cae en clase C. El total cero ya está protegido, pero los cruces y empates carecen de criterio apropiado. [PLAN.md:65](PLAN.md#L65) · [AnalyticsService.java:65](backend/src/main/java/com/shoestore/inventory/analytics/application/service/AnalyticsService.java#L65) · [AnalyticsService.java:126](backend/src/main/java/com/shoestore/inventory/analytics/application/service/AnalyticsService.java#L126) · [SpringDataAnalyticsRepository.java:19](backend/src/main/java/com/shoestore/inventory/analytics/infrastructure/adapters/out/persistence/repository/SpringDataAnalyticsRepository.java#L19)
 - **Corrección y dependencias.** Acordar que el grupo que alcanza el umbral complete la clase correspondiente y usar comparación precisa y desempate estable. Depende de confirmar la regla comercial del plan.
 - **Prueba y aceptación.** Probar un grupo, empates, cruce de 80 % y 95 %, cancelaciones excluidas e ingresos cero.
 
-### ANA-02 · MEDIUM · TODO · P7a · Baja
+### ANA-02 · MEDIUM · VERIFIED · P7a · Baja
+
+- **Resultado del 26 de noviembre de 2026.** Riesgo suma pares de variantes con stock positivo, antigüedad mayor de 45 días y ninguna venta completada en los últimos 45 días. El período del ABC no altera la liquidación. PostgreSQL verificó variantes recientes, stock cero, anulación, ventas anteriores a la ventana y límites exactos. React muestra modelo, color y talla y conserva oportunidades durante períodos sin ventas. [Evidencia](docs/rup/pruebas/PRUEBAS.md#ana-01-y-ana-02--analítica-real)
 
 - **Evidencia, causa e impacto.** `atRiskPairs` cuenta grupos modelo-color, incluso sin existencias. La liquidación toma antigüedad de producto y ventas de la ventana seleccionada. El informe puede sobrestimar el riesgo al acortar el período. [AnalyticsService.java:103](backend/src/main/java/com/shoestore/inventory/analytics/application/service/AnalyticsService.java#L103) · [AnalyticsService.java:152](backend/src/main/java/com/shoestore/inventory/analytics/application/service/AnalyticsService.java#L152)
 - **Corrección y dependencias.** Acordar unidad de riesgo y período de observación de liquidación. Usar antigüedad de variante si la decisión aplica a ese nivel. Coordinar con `ANA-01` y el texto de UI.

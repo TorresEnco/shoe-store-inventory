@@ -39,10 +39,10 @@ export default function Header({ currentUser, onLogout, onOpenSalesHistory }: He
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-sm border-b border-stone-200 shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
 
         {/* ── Brand (left) ── */}
-        <div className="flex flex-col leading-tight">
+        <div className="flex min-w-0 max-w-full flex-col leading-tight">
           <span className="text-base font-bold tracking-tight text-leather">
             Comercial Torres
           </span>

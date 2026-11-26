@@ -71,3 +71,53 @@ test('a history response with an invalid structure has an actionable error', asy
   const api = client(async () => Response.json([{ id: 1, createdAt: null, items: [] }]));
   await assert.rejects(api.getTodaySales(), error => error.kind === 'response');
 });
+
+const reportFixture = () => ({
+  periodDays: 30, totalSold: 2, totalRevenue: 90, atRiskPairs: 7, classAPercentage: 100,
+  models: [{
+    productId: 1, colorId: null, productName: 'Modelo', brandName: null, colorName: null,
+    totalSold: 2, revenue: 90, velocityPerDay: 0.1, currentStock: 7,
+    classification: 'CLASS_A', stockStatus: 'Rotación saludable', sizeBreakdown: { 40: 7 },
+  }],
+  liquidationSuggestions: ['Modelo · talla 40: 7 pares sin ventas en 45 días'],
+});
+
+test('analytics reads real reports and supports a period without sales', async () => {
+  const fixture = reportFixture();
+  const api = client(async url => {
+    assert.equal(url, '/api/analytics/pareto?days=30');
+    return Response.json(fixture);
+  });
+  assert.deepEqual(JSON.parse(JSON.stringify(await api.getParetoReport(30))), fixture);
+  const empty = client(async () => Response.json({
+    ...fixture, totalSold: 0, totalRevenue: 0, classAPercentage: 0, models: [],
+  }));
+  assert.equal((await empty.getParetoReport(30)).models.length, 0);
+});
+
+test('analytics rejects invalid metrics before rendering', async () => {
+  const invalid = [
+    null, {}, { ...reportFixture(), periodDays: 7 }, { ...reportFixture(), totalRevenue: -1 },
+    { ...reportFixture(), atRiskPairs: 1.5 }, { ...reportFixture(), classAPercentage: 101 },
+    { ...reportFixture(), liquidationSuggestions: [null] },
+    ...[
+      null, { productId: 0 }, { colorId: undefined }, { currentStock: -2 }, { totalSold: '2' },
+      { classification: 'A' }, { stockStatus: 'unknown' }, { sizeBreakdown: [] },
+      { sizeBreakdown: { invalid: 2 } }, { sizeBreakdown: { 40: -1 } },
+    ].map(fields => ({ ...reportFixture(), models: [fields === null ? null : { ...reportFixture().models[0], ...fields }] })),
+  ];
+  for (const fixture of invalid) {
+    const api = client(async () => Response.json(fixture));
+    await assert.rejects(api.getParetoReport(30), error => error.kind === 'response' && error.message.includes('informe'));
+  }
+});
+
+test('analytics distinguishes expired sessions, forbidden access and network errors', async () => {
+  for (const status of [401, 403]) {
+    const api = client(async () => new Response(null, { status }));
+    await assert.rejects(api.getParetoReport(30), error =>
+      error.message.includes(status === 401 ? 'sesión' : 'Acceso denegado'));
+  }
+  const offline = client(async () => { throw new TypeError('fixture offline'); });
+  await assert.rejects(offline.getParetoReport(30), error => error.kind === 'connection');
+});

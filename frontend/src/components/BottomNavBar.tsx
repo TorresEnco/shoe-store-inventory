@@ -108,7 +108,7 @@ export default function BottomNavBar({ activeTab, onTabChange, admin }: BottomNa
               aria-label={label}
               onClick={() => onTabChange(id)}
               className={[
-                'flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 px-1',
+                'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-2.5 px-1',
                 'transition-colors duration-150 active:scale-95',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leather/50',
                 isActive

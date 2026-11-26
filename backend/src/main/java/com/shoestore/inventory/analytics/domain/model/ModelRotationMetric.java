@@ -6,6 +6,7 @@ import java.util.Map;
 public class ModelRotationMetric {
 
 	private Long productId;
+	private Long colorId;
 	private String productName;
 	private String brandName;
 	private String colorName;
@@ -20,10 +21,11 @@ public class ModelRotationMetric {
 	public ModelRotationMetric() {
 	}
 
-	public ModelRotationMetric(Long productId, String productName, String brandName, String colorName,
+	public ModelRotationMetric(Long productId, Long colorId, String productName, String brandName, String colorName,
 			Integer totalSold, BigDecimal revenue, Double velocityPerDay, Integer currentStock,
 			AbcClassification classification, String stockStatus, Map<Integer, Integer> sizeBreakdown) {
 		this.productId = productId;
+		this.colorId = colorId;
 		this.productName = productName;
 		this.brandName = brandName;
 		this.colorName = colorName;
@@ -38,6 +40,10 @@ public class ModelRotationMetric {
 
 	public Long getProductId() {
 		return productId;
+	}
+
+	public Long getColorId() {
+		return colorId;
 	}
 
 	public void setProductId(Long productId) {

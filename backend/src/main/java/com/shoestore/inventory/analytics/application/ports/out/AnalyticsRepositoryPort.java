@@ -1,6 +1,5 @@
 package com.shoestore.inventory.analytics.application.ports.out;
 
-import com.shoestore.inventory.product.domain.model.Product;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -8,9 +7,11 @@ import java.util.List;
 
 public interface AnalyticsRepositoryPort {
 
-	List<ProductSalesAggregate> findSalesByProductSince(LocalDateTime since);
+	List<ProductSalesAggregate> findSalesByProductSince(LocalDateTime since, LocalDateTime until);
 
-	List<Product> findProductsCreatedBefore(LocalDateTime cutoff);
+	List<StagnantVariant> findStagnantVariants(LocalDateTime cutoff, LocalDateTime until);
+
+	record StagnantVariant(String productName, String colorName, Integer size, int stock) {}
 
 	record ProductSalesAggregate(
 			Long productId,

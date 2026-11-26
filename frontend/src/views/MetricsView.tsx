@@ -1,123 +1,102 @@
-/**
- * MetricsView.tsx
- *
- * "Rotación de Inventario" — Pareto (ABC) dashboard for Comercial Torres.
- * Summarises KPIs, top-traffic models, per-size stock health, and liquidation leads.
- */
-
-import { useState } from 'react';
-import {
-  MOCK_CLASS_COUNTS,
-  MOCK_METRICS_SUMMARY,
-  MOCK_TOP_MODELS,
-  type MetricClass,
-} from '../data/mockMetrics';
+import { useEffect, useState } from 'react';
 import MetricModelCard from '../components/MetricModelCard';
+import { getParetoReport, type ParetoReport } from '../services/api';
 
-const CLASSES: MetricClass[] = ['A', 'B', 'C'];
+const CLASSES = ['CLASS_A', 'CLASS_B', 'CLASS_C'] as const;
 
 export default function MetricsView() {
-  const [activeClass, setActiveClass] = useState<MetricClass>('A');
-  const { totalSold, totalRevenue, atRiskPairs } = MOCK_METRICS_SUMMARY;
-  const revenueK = (Math.floor(totalRevenue / 100) / 10).toFixed(1);
-  const visibleModels = MOCK_TOP_MODELS.filter((model) => model.abcClass === activeClass);
-  const maxSold = Math.max(...MOCK_TOP_MODELS.map((model) => model.soldPairs), 1);
+  const [activeClass, setActiveClass] = useState<typeof CLASSES[number]>('CLASS_A');
+  const [days, setDays] = useState(30);
+  const [refresh, setRefresh] = useState(0);
+  const [report, setReport] = useState<ParetoReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    getParetoReport(days).then(result => {
+      if (active) setReport(result);
+    }).catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : 'No se pudo cargar el informe.');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [days, refresh]);
+
+  function reload() {
+    setReport(null);
+    setError('');
+    setLoading(true);
+    setRefresh(value => value + 1);
+  }
+
+  const visibleModels = report?.models.filter(model => model.classification === activeClass) ?? [];
+  const maxSold = Math.max(...(report?.models.map(model => model.totalSold) ?? []), 1);
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 pb-10">
-      {/* ── Top bar ── */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-stone-900">Rotación de Inventario</h2>
-          <p className="text-xs text-stone-500">Análisis ABC · Regla de Pareto (80/20)</p>
-        </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[10px] font-bold text-stone-600 shadow-xs hover:bg-stone-50"
-        >
-          📅 Últimos 30 días ▾
+    <section className="flex flex-col gap-4 px-4 py-4 pb-10" aria-labelledby="metrics-title" aria-busy={loading}>
+      <div>
+        <h2 id="metrics-title" className="text-xl font-bold tracking-tight text-stone-900">Rotación de Inventario</h2>
+        <p className="mt-1 text-sm text-stone-600">Análisis ABC por modelo y color · Ingresos 80/15/5</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="metrics-period" className="text-sm font-semibold text-stone-700">Período de ventas</label>
+        <select id="metrics-period" value={days} onChange={event => {
+          setReport(null); setError(''); setLoading(true); setDays(Number(event.target.value));
+        }} className="min-h-11 rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-800">
+          {[7, 30, 90].map(period => <option key={period} value={period}>Últimos {period} días</option>)}
+        </select>
+      </div>
+      {loading && <p role="status" className="text-sm text-stone-600">Cargando informe…</p>}
+      {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <p>{error}</p>
+        <button type="button" onClick={reload} className="mt-2 min-h-11 rounded-lg bg-leather px-4 font-semibold text-white">
+          Reintentar informe
         </button>
-      </div>
-
-      {/* ── KPI summary ── */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-2.5 shadow-xs">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Vendidos</p>
-          <p className="mt-1 text-lg font-bold text-stone-900">{totalSold}</p>
-          <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">+18%</span>
-        </div>
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-2.5 shadow-xs">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Ingresos</p>
-          <p className="mt-1 text-lg font-bold text-stone-900">S/. {revenueK}k</p>
-          <span className="text-[9px] font-semibold text-stone-400">Mg. prom 42%</span>
-        </div>
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-2.5 shadow-xs">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">En Riesgo</p>
-          <p className="mt-1 text-lg font-bold text-stone-900">{atRiskPairs} prs</p>
-          <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">Estancados</span>
-        </div>
-      </div>
-
-      {/* ── Pareto insight ── */}
-      <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50/80 p-3">
-        <span className="text-lg leading-none" role="img" aria-label="Idea">💡</span>
-        <p className="text-xs font-medium leading-snug text-amber-900">
-          El 20% de tus modelos (Clase A) genera el <strong>78%</strong> de la facturación mensual.
+      </div>}
+      {report && <>
+        <dl className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-stone-200 bg-white p-3">
+            <dt className="text-sm font-semibold text-stone-600">Pares vendidos</dt>
+            <dd className="mt-1 break-all text-xl font-bold tabular-nums text-stone-900">{report.totalSold}</dd>
+          </div>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+            <dt className="text-sm font-semibold text-amber-900">Pares en riesgo</dt>
+            <dd className="mt-1 break-all text-xl font-bold tabular-nums text-amber-950">{report.atRiskPairs}</dd>
+          </div>
+          <div className="col-span-2 rounded-2xl border border-stone-200 bg-white p-3">
+            <dt className="text-sm font-semibold text-stone-600">Ingresos de ventas completadas</dt>
+            <dd className="mt-1 break-all text-2xl font-bold tabular-nums text-leather">
+              S/. {report.totalRevenue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </dd>
+          </div>
+        </dl>
+        <p className="text-sm text-stone-700">
+          La clase A genera el <strong>{report.classAPercentage.toLocaleString('es-PE')} %</strong> de los ingresos del período.
+          El grupo que cruza el 80 % completa A; el que cruza el 95 % completa B.
         </p>
-      </div>
-
-      {/* ── Class tabs ── */}
-      <div className="flex gap-1 rounded-2xl bg-stone-100 p-1" role="tablist" aria-label="Filtro por clase ABC">
-        {CLASSES.map((abcClass) => (
-          <button
-            key={abcClass}
-            type="button"
-            role="tab"
-            aria-selected={activeClass === abcClass}
-            onClick={() => setActiveClass(abcClass)}
-            className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
-              activeClass === abcClass
-                ? 'bg-leather text-white shadow-sm'
-                : 'text-stone-500 hover:text-stone-700'
-            }`}
-          >
-            Clase {abcClass} ({MOCK_CLASS_COUNTS[abcClass]})
-          </button>
-        ))}
-      </div>
-
-      {/* ── Top models ── */}
-      <div className="flex flex-col gap-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Modelos Top de Tracción</h3>
-        {visibleModels.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {visibleModels.map((model) => (
-              <MetricModelCard key={model.id} model={model} maxSold={maxSold} />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border-2 border-dashed border-stone-200 py-8 text-center">
-            <p className="text-xs font-semibold text-stone-400">Sin modelos registrados en esta clase.</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Liquidation opportunity ── */}
-      <div className="rounded-2xl border border-orange-200/80 bg-orange-50/70 p-3.5">
-        <div className="flex items-start gap-2">
-          <span className="text-lg leading-none" role="img" aria-label="Descuento">🏷️</span>
-          <p className="text-xs font-medium leading-snug text-amber-900">
-            3 modelos de Clase C llevan más de 45 días sin ventas (18 pares estancados). Se sugiere
-            descuento del 15% en exhibidor frontal.
-          </p>
+        {report.models.length === 0 && <p role="status" className="rounded-xl bg-stone-100 p-3 text-sm text-stone-700">
+          No hay ventas completadas en este período.
+        </p>}
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por clase ABC">
+          {CLASSES.map(value => <button key={value} type="button" aria-pressed={activeClass === value}
+            onClick={() => setActiveClass(value)}
+            className="min-h-11 flex-1 rounded-xl border border-stone-300 bg-white px-3 text-sm font-bold text-stone-700 aria-pressed:border-leather aria-pressed:bg-leather aria-pressed:text-white">
+            Clase {value.slice(-1)} ({report.models.filter(model => model.classification === value).length})
+          </button>)}
         </div>
-        <button
-          type="button"
-          className="mt-3 w-full rounded-xl bg-leather py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-leather-dark active:scale-[0.98]"
-        >
-          % Crear promo rápida
-        </button>
-      </div>
-    </div>
+        <div className="flex flex-col gap-3" aria-live="polite">
+          {visibleModels.length ? visibleModels.map(model => <MetricModelCard
+            key={model.productId + ':' + model.colorId} model={model} maxSold={maxSold} />)
+            : <p className="py-3 text-sm text-stone-600">Sin grupos con ventas en esta clase.</p>}
+        </div>
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-amber-950" aria-labelledby="liquidation-title">
+          <h3 id="liquidation-title" className="font-bold">Oportunidades de liquidación</h3>
+          <p className="mt-1 text-sm">Stock de variantes con más de 45 días de antigüedad y sin ventas completadas en los últimos 45 días. Este criterio no cambia con el período del ABC.</p>
+          {report.liquidationSuggestions.length ? <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-sm">
+            {report.liquidationSuggestions.map((suggestion, index) => <li key={index} className="break-words">{suggestion}</li>)}
+          </ul> : <p className="mt-3 text-sm">No hay variantes que cumplan este criterio.</p>}
+        </section>
+      </>}
+    </section>
   );
 }

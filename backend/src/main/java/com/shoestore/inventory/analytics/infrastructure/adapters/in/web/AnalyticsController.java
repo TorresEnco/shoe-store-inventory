@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 @RestController
 @RequestMapping("/api/analytics")
@@ -20,7 +22,7 @@ public class AnalyticsController {
 	}
 
 	@GetMapping("/pareto")
-	public ParetoReport getParetoReport(@RequestParam(defaultValue = "30") int days) {
+	public ParetoReport getParetoReport(@RequestParam(defaultValue = "30") @Min(1) @Max(365) int days) {
 		return getParetoAnalysisUseCase.getParetoReport(days);
 	}
 }

@@ -3,8 +3,6 @@ package com.shoestore.inventory.analytics.infrastructure.adapters.out.persistenc
 import com.shoestore.inventory.analytics.application.ports.out.AnalyticsRepositoryPort;
 import com.shoestore.inventory.analytics.infrastructure.adapters.out.persistence.repository.ProductSalesProjection;
 import com.shoestore.inventory.analytics.infrastructure.adapters.out.persistence.repository.SpringDataAnalyticsRepository;
-import com.shoestore.inventory.product.domain.model.Product;
-import com.shoestore.inventory.product.infrastructure.adapters.out.persistence.mapper.ProductMapper;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -14,26 +12,21 @@ import java.util.List;
 public class AnalyticsPersistenceAdapter implements AnalyticsRepositoryPort {
 
 	private final SpringDataAnalyticsRepository analyticsRepository;
-	private final ProductMapper productMapper;
 
-	public AnalyticsPersistenceAdapter(SpringDataAnalyticsRepository analyticsRepository,
-			ProductMapper productMapper) {
+	public AnalyticsPersistenceAdapter(SpringDataAnalyticsRepository analyticsRepository) {
 		this.analyticsRepository = analyticsRepository;
-		this.productMapper = productMapper;
 	}
 
 	@Override
-	public List<ProductSalesAggregate> findSalesByProductSince(LocalDateTime since) {
-		return analyticsRepository.findSalesByProductSince(since).stream()
+	public List<ProductSalesAggregate> findSalesByProductSince(LocalDateTime since, LocalDateTime until) {
+		return analyticsRepository.findSalesByProductSince(since, until).stream()
 				.map(this::toAggregate)
 				.toList();
 	}
 
 	@Override
-	public List<Product> findProductsCreatedBefore(LocalDateTime cutoff) {
-		return analyticsRepository.findProductsCreatedBefore(cutoff).stream()
-				.map(productMapper::toDomain)
-				.toList();
+	public List<StagnantVariant> findStagnantVariants(LocalDateTime cutoff, LocalDateTime until) {
+		return analyticsRepository.findStagnantVariants(cutoff, until);
 	}
 
 	private ProductSalesAggregate toAggregate(ProductSalesProjection projection) {
