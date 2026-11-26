@@ -14,7 +14,8 @@ import QuantityDrawer, { type DrawerVariant } from '../components/QuantityDrawer
 import FloatingOrderBar from '../components/FloatingOrderBar';
 import CheckoutModal from '../components/CheckoutModal';
 import SearchBar from '../components/SearchBar';
-import CategoryPills, { CATEGORIES, type FilterCategory } from '../components/CategoryPills';
+import CategoryPills from '../components/CategoryPills';
+import { CATEGORIES, type FilterCategory } from '../data/categoryFilters';
 
 interface PosViewProps {
   shoes?: Shoe[];
@@ -159,7 +160,8 @@ export default function PosView({
         )}
       </div>
 
-      <QuantityDrawer variant={drawerVariant} onConfirm={handleConfirm} onCancel={() => setDrawerVariant(null)} />
+      {drawerVariant && <QuantityDrawer key={drawerVariant.variantId} variant={drawerVariant}
+        onConfirm={handleConfirm} onCancel={() => setDrawerVariant(null)} />}
       <FloatingOrderBar cart={cartArray} onOpenCheckout={() => setCheckoutOpen(true)} />
       <CheckoutModal
         isOpen={isCheckoutOpen}

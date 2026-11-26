@@ -7,8 +7,8 @@
 
 import type { Category } from '../data/mockShoes';
 
-export const BRANDS = ['Alva', 'Bruma', 'Andino', 'Calimod', 'Viale'];
-export const CATEGORIES_LIST: Category[] = ['Casual', 'Zapatillas', 'Formal', 'Botines'];
+const BRANDS = ['Alva', 'Bruma', 'Andino', 'Calimod', 'Viale'];
+const CATEGORIES_LIST: Category[] = ['Casual', 'Zapatillas', 'Formal', 'Botines'];
 
 interface ProductGeneralSectionProps {
   name: string;

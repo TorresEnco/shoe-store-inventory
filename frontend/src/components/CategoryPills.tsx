@@ -4,11 +4,7 @@
  * Horizontal scrollable category filters with count badges.
  */
 
-import type { Category } from '../data/mockShoes';
-
-export type FilterCategory = 'Todas' | Category;
-
-export const CATEGORIES: FilterCategory[] = ['Todas', 'Casual', 'Zapatillas', 'Formal', 'Botines'];
+import { CATEGORIES, type FilterCategory } from '../data/categoryFilters';
 
 interface CategoryPillsProps {
   active: FilterCategory;

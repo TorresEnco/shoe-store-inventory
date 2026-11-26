@@ -14,7 +14,7 @@ import SheetDialog from './SheetDialog';
  * Animation: CSS translate-y on the sheet + opacity on the backdrop.
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { CartItem } from '../types/cart';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ export interface DrawerVariant {
 }
 
 interface QuantityDrawerProps {
-  variant: DrawerVariant | null; // null = closed
+  variant: DrawerVariant;
   onConfirm: (item: CartItem) => void;
   onCancel: () => void;
 }
@@ -92,7 +92,7 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
    * qty — typable + stepper, clamped to [1, maxStock].
    * Stored as a number; the <input> converts the raw string on blur/change.
    */
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(variant.existingQty > 0 ? variant.existingQty : 1);
 
   /**
    * unitPrice — the per-pair price the cashier will charge.
@@ -100,19 +100,7 @@ export default function QuantityDrawer({ variant, onConfirm, onCancel }: Quantit
    * Stored as a string while the cashier is typing (so "12" doesn't
    * round-trip to "12.00" mid-edit), then parsed on confirm/blur.
    */
-  const [unitPriceStr, setUnitPriceStr] = useState('');
-
-  // ── Seed state whenever the drawer opens for a new variant ──────────────────
-  useEffect(() => {
-    if (variant) {
-      setQty(variant.existingQty > 0 ? variant.existingQty : 1);
-      // Re-seed the negotiated price from whatever is already in the cart,
-      // falling back to the catalogue price for first-time opens.
-      setUnitPriceStr(variant.existingUnitPrice.toFixed(2));
-    }
-  }, [variant]);
-
-  if (!variant) return null;
+  const [unitPriceStr, setUnitPriceStr] = useState(() => variant.existingUnitPrice.toFixed(2));
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const enteredPrice = parsePrice(unitPriceStr);

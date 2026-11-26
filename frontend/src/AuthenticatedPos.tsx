@@ -26,19 +26,18 @@ export default function AuthenticatedPos({ currentUser, onLogout }: { currentUse
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const requestVersions = useRef({ products: 0, history: 0 });
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(() => {
     const requestId = ++requestVersions.current.products;
-    try {
-      const products = await getProducts();
+    return getProducts().then(products => {
       if (requestId !== requestVersions.current.products) return;
       setLoadError(null);
       setShoes(products.map(mapProductToShoe));
-    } catch (cause) {
+    }).catch((cause: unknown) => {
       if (requestId !== requestVersions.current.products) return;
       setLoadError(cause instanceof Error ? cause.message : 'No se pudo cargar el catálogo.');
-    } finally {
+    }).finally(() => {
       if (requestId === requestVersions.current.products) setIsLoading(false);
-    }
+    });
   }, []);
 
   useEffect(() => {
